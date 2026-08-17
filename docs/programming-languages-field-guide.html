@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="A CSCI 330 reference on models of computation (including LLMs and who owns AI-assisted code), language paradigms, and mechanics, illustrated throughout by a full-stack Parking App case study.">
+<title>Programming Languages Field Guide</title>
+<style>
+  :root{
+    --bg:#F4F5F0; --surface:#FFFFFF; --surface-2:#ECEEE8;
+    --ink:#1C2321; --ink-soft:#52605A; --ink-faint:#7C887F;
+    --accent:#2F6F62; --accent-ink:#FFFFFF; --accent-soft:#DCE8E1;
+    --amber:#9C6B26; --amber-soft:#F1E4CF;
+    --rule:#D9DBD3;
+    --code-bg:#1B2321; --code-ink:#E7ECE7; --code-faint:#93A69C;
+    --shadow:0 1px 2px rgba(28,35,33,.06), 0 10px 28px rgba(28,35,33,.07);
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10151A; --surface:#171F24; --surface-2:#1D262C;
+      --ink:#E8EBE6; --ink-soft:#ADB8B1; --ink-faint:#7C887F;
+      --accent:#5FB8A4; --accent-ink:#0B1613; --accent-soft:#1D3A34;
+      --amber:#D9A455; --amber-soft:#3A2E1B;
+      --rule:#2A3339;
+      --code-bg:#0D1310; --code-ink:#DCEFE7; --code-faint:#6E8880;
+      --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10151A; --surface:#171F24; --surface-2:#1D262C;
+    --ink:#E8EBE6; --ink-soft:#ADB8B1; --ink-faint:#7C887F;
+    --accent:#5FB8A4; --accent-ink:#0B1613; --accent-soft:#1D3A34;
+    --amber:#D9A455; --amber-soft:#3A2E1B;
+    --rule:#2A3339;
+    --code-bg:#0D1310; --code-ink:#DCEFE7; --code-faint:#6E8880;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 10px 28px rgba(0,0,0,.4);
+  }
+
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; scroll-behavior:auto !important;} }
+
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:var(--sans); line-height:1.6; font-size:16.5px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  a{ color:var(--accent); text-decoration-thickness:1px; text-underline-offset:2px; }
+  a:focus-visible, label:focus-visible, summary:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:3px; }
+
+  h1,h2,h3,h4{ font-family:var(--serif); font-weight:600; text-wrap:balance; color:var(--ink); }
+  h1{ font-size:2.6rem; line-height:1.1; margin:0 0 .4rem; }
+  h2{ font-size:1.7rem; margin:3.2rem 0 .3rem; padding-top:1.6rem; border-top:1px solid var(--rule); }
+  h3{ font-size:1.28rem; margin:2.2rem 0 .6rem; color:var(--ink); }
+  h4{ font-size:1.05rem; margin:1.6rem 0 .4rem; color:var(--accent); }
+  .kicker{ font-family:var(--sans); font-size:.78rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); margin:0 0 .3rem; }
+  .part-divider{ margin:4.2rem 0 1.2rem; padding-bottom:.6rem; border-bottom:2px solid var(--ink); }
+  .part-divider .kicker{ color:var(--ink-faint); font-size:.72rem; }
+  .part-divider h2{ margin:0; padding:0; border:0; font-size:1.5rem; }
+
+  p{ margin:.75rem 0; max-width:74ch; }
+  ul,ol{ margin:.75rem 0; padding-left:1.4rem; max-width:72ch; }
+  li{ margin:.3rem 0; }
+  strong{ color:var(--ink); }
+  em{ color:var(--ink-soft); }
+
+  .page{ display:grid; grid-template-columns:1fr; }
+  @media (min-width:960px){ .page{ grid-template-columns:270px minmax(0,1fr); gap:2.6rem; align-items:start; } }
+
+  main{ min-width:0; padding:2.2rem 1.4rem 5rem; }
+  @media (min-width:600px){ main{ padding:3rem 2.2rem 6rem; } }
+  article{ max-width:74ch; }
+
+  .titleblock{ max-width:74ch; padding-bottom:1.6rem; margin-bottom:.4rem; border-bottom:1px solid var(--rule); }
+  .titleblock .kicker{ margin-bottom:.6rem; }
+  .titleblock .dek{ font-size:1.08rem; color:var(--ink-soft); max-width:62ch; margin-top:.6rem; }
+  .titleblock .meta{ margin-top:1.1rem; font-size:.85rem; color:var(--ink-faint); }
+
+  /* TOC */
+  nav.toc{ font-family:var(--sans); }
+  .toc-toggle-input{ position:absolute; opacity:0; pointer-events:none; }
+  .toc-toggle-label{
+    display:flex; align-items:center; justify-content:space-between; cursor:pointer;
+    padding:.9rem 1.1rem; margin:1rem 1.4rem 0; background:var(--surface); border:1px solid var(--rule);
+    border-radius:10px; font-weight:700; font-size:.92rem; box-shadow:var(--shadow);
+  }
+  .toc-toggle-label .chev{ color:var(--ink-faint); transition:transform .15s ease; }
+  .toc-toggle-input:checked ~ .toc-toggle-label .chev{ transform:rotate(180deg); }
+  .toc-toggle-input:focus-visible ~ .toc-toggle-label{ outline:2px solid var(--accent); outline-offset:2px; }
+  .toc-body{ display:none; padding:.6rem 1rem 1.6rem; }
+  .toc-toggle-input:checked ~ .toc-body{ display:block; }
+  .toc-body ol{ list-style:none; margin:0; padding:0; }
+  .toc-part{ margin-top:1.1rem; font-size:.7rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-faint); font-weight:700; }
+  .toc-part:first-child{ margin-top:0; }
+  .toc-chapter > a{ display:block; padding:.3rem 0; font-weight:700; color:var(--ink); text-decoration:none; font-size:.95rem; }
+  .toc-chapter > a:hover{ color:var(--accent); }
+  .toc-sub{ list-style:none; margin:0 0 .5rem; padding-left:.9rem; border-left:1px solid var(--rule); }
+  .toc-sub li a{ display:block; padding:.16rem 0; font-size:.83rem; color:var(--ink-soft); text-decoration:none; }
+  .toc-sub li a:hover{ color:var(--accent); }
+
+  @media (min-width:960px){
+    main{ padding-left:0; }
+    .toc-toggle-label{ display:none; }
+    .toc-body{ display:block !important; position:sticky; top:2rem; max-height:calc(100vh - 4rem); overflow-y:auto;
+      margin:2.6rem 0 0 1.4rem; padding-right:1rem; }
+  }
+
+  /* Tables */
+  .table-wrap{ overflow-x:auto; margin:1.1rem 0; border:1px solid var(--rule); border-radius:10px; box-shadow:var(--shadow); background:var(--surface); }
+  table{ border-collapse:collapse; width:100%; font-size:.93rem; min-width:420px; }
+  caption{ text-align:left; font-size:.8rem; color:var(--ink-faint); padding:.5rem .9rem 0; }
+  th,td{ text-align:left; padding:.55rem .9rem; border-bottom:1px solid var(--rule); vertical-align:top; }
+  thead th{ background:var(--surface-2); font-family:var(--sans); font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); }
+  tbody tr:last-child td{ border-bottom:none; }
+  td code, li code, p code{ background:var(--surface-2); color:var(--ink); padding:.08em .35em; border-radius:4px; font-family:var(--mono); font-size:.88em; }
+
+  /* Code blocks */
+  .codeblock{ position:relative; margin:1.1rem 0; border-radius:10px; overflow:auto; box-shadow:var(--shadow); border:1px solid var(--rule); }
+  .codeblock pre{ margin:0; padding:1rem 1.1rem; background:var(--code-bg); overflow-x:auto; }
+  .codeblock code{ font-family:var(--mono); font-size:.87rem; color:var(--code-ink); line-height:1.55; white-space:pre; }
+  .codeblock::after{ content:attr(data-lang); position:absolute; top:.55rem; right:.8rem; font-family:var(--sans);
+    font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--code-faint); }
+  .codeblock.case{ border-color:var(--amber); border-width:1px 1px 1px 4px; }
+
+  /* Callouts */
+  .callout{ margin:1.3rem 0; padding:1rem 1.2rem; background:var(--accent-soft); border-left:4px solid var(--accent); border-radius:8px; }
+  .callout p{ margin:.3rem 0; max-width:none; }
+  .callout .label{ font-family:var(--sans); font-weight:700; font-size:.74rem; letter-spacing:.07em; text-transform:uppercase; color:var(--accent); display:block; margin-bottom:.3rem; }
+  .callout--warn{ background:var(--amber-soft); border-left-color:var(--amber); }
+  .callout--warn .label{ color:var(--amber); }
+
+  .thesis{ margin:1.5rem 0; padding:1.3rem 1.5rem; background:var(--surface); border:1px solid var(--rule); border-left:4px solid var(--amber); border-radius:10px; box-shadow:var(--shadow); }
+  .thesis p{ font-family:var(--serif); font-size:1.16rem; font-style:italic; color:var(--ink); margin:0; max-width:none; }
+
+  /* Figures */
+  figure{ margin:1.6rem 0; }
+  figure svg{ display:block; width:100%; height:auto; max-width:100%; }
+  .figure-frame{ background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:1rem 1rem .5rem; box-shadow:var(--shadow); overflow-x:auto; }
+  figcaption{ font-size:.85rem; color:var(--ink-faint); margin-top:.6rem; max-width:66ch; }
+
+  .glossary dt{ font-weight:700; font-family:var(--serif); margin-top:.9rem; }
+  .glossary dd{ margin:.15rem 0 0; color:var(--ink-soft); max-width:70ch; }
+
+  .colophon{ margin-top:4rem; padding-top:1.4rem; border-top:1px solid var(--rule); font-size:.85rem; color:var(--ink-faint); max-width:74ch; }
+
+  .backlink{ font-size:.85rem; }
+  code, tt{ font-family:var(--mono); }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <nav class="toc" aria-label="Table of contents">
+    <input type="checkbox" id="toc-toggle" class="toc-toggle-input" checked />
+    <label for="toc-toggle" class="toc-toggle-label">Contents <span class="chev">▾</span></label>
+    <div class="toc-body">
+      <ol>
+        <li><a href="#preface" class="toc-chapter" style="font-weight:400;font-size:.88rem;">Preface</a></li>
+
+        <li class="toc-part">Part I — Foundations</li>
+        <li class="toc-chapter"><a href="#models-of-computation">1&ensp;Models of Computation</a>
+          <ul class="toc-sub">
+            <li><a href="#von-neumann">1.1 Von Neumann</a></li>
+            <li><a href="#neural-networks">1.2 Neural networks</a></li>
+            <li><a href="#probabilistic-computation">1.3 Probabilistic computation, simulation & state estimation (incl. quantum)</a></li>
+            <li><a href="#llms-model-of-computation">1.4 LLMs as a model of computation</a></li>
+            <li><a href="#reliability-repeatable-machines">1.5 Reliability & repeatable machines</a></li>
+            <li><a href="#who-owns-the-code">1.6 Who owns the code</a></li>
+          </ul>
+        </li>
+
+        <li class="toc-part">Part II — Paradigms</li>
+        <li class="toc-chapter"><a href="#paradigm-categories">2&ensp;Categories of Languages</a></li>
+        <li class="toc-chapter"><a href="#oop-depth">3&ensp;Object-Oriented Programming</a></li>
+        <li class="toc-chapter"><a href="#functional-depth">4&ensp;Functional Programming</a>
+          <ul class="toc-sub">
+            <li><a href="#fp-in-nonfunctional">4.5 Functional patterns in non-functional languages</a></li>
+            <li><a href="#fp-black-box">4.6 Black-box vs. pure functional design</a></li>
+            <li><a href="#fp-rest-apis">4.7 REST APIs as functional architecture</a></li>
+          </ul>
+        </li>
+        <li class="toc-chapter"><a href="#logic-constraint-languages">5&ensp;Logic & Constraint-Based Languages</a>
+          <ul class="toc-sub">
+            <li><a href="#prolog">5.1 Prolog</a></li>
+            <li><a href="#html-css-constraints">5.2 HTML/CSS as constraints</a></li>
+            <li><a href="#sql-constraints">5.3 SQL as a constraint language</a></li>
+          </ul>
+        </li>
+
+        <li class="toc-part">Part III — Mechanics</li>
+        <li class="toc-chapter"><a href="#typing-memory-mutability">6&ensp;Typing, Memory, Mutability</a></li>
+        <li class="toc-chapter"><a href="#compilation-parsing">7&ensp;Compilation & Parsing</a></li>
+        <li class="toc-chapter"><a href="#runtimes-platforms">8&ensp;Runtimes & Reproducible Builds</a></li>
+
+        <li class="toc-part">Part IV — Case Study</li>
+        <li class="toc-chapter"><a href="#parking-app">9&ensp;The Parking App</a>
+          <ul class="toc-sub">
+            <li><a href="#parking-app-architecture">9.1 Architecture</a></li>
+            <li><a href="#parking-app-coupling">9.2 Why the coupling isn't an accident</a></li>
+            <li><a href="#parking-app-functional-js">9.3 Functional patterns in the JS</a></li>
+            <li><a href="#parking-app-constraints">9.4 HTML/CSS & SQL as constraint layers</a></li>
+            <li><a href="#parking-app-async">9.5 Async booking flow</a></li>
+            <li><a href="#parking-app-security">9.6 Security</a></li>
+          </ul>
+        </li>
+
+        <li class="toc-part">Reference</li>
+        <li class="toc-chapter"><a href="#language-selection">Appendix A — Language selection</a></li>
+        <li class="toc-chapter"><a href="#glossary">Appendix B — Glossary</a></li>
+      </ol>
+    </div>
+  </nav>
+
+  <main>
+    <header class="titleblock">
+      <p class="kicker">CSCI 330 · Programming Languages</p>
+      <h1>A Field Guide to Programming Languages</h1>
+      <p class="dek">Models of computation, the paradigms built on top of them, and how both show up in one small full-stack application, the <strong>Parking App</strong>, used as a running example throughout.</p>
+      <p class="meta">Reorganized by topic from the CSCI 330 course notes (Fall 2024, Dr. Warren MacEvoy &amp; Brandon Kamplain). Two additions not in the original notes: large language models as a model of computation, including who owns AI-assisted code (§1.4–1.6), and the Parking App case study (Chapter 9).</p>
+    </header>
+
+    <article>
+
+      <section id="preface">
+        <h2 style="border-top:none;margin-top:2.2rem;">Preface</h2>
+        <p>The original course notes were captured chronologically, lecture by lecture. This guide reorganizes that material by topic so it works as a standing reference rather than a log of what was covered on which day. Two things have been added that weren't in the original notes:</p>
+        <ol>
+          <li><strong>Large language models as a model of computation</strong> (§1.4); the argument that reliable systems are still built from traditional, repeatable machines even when a probabilistic model sits at their core (§1.5); and, as a direct consequence, why that repeatability doesn't relieve the engineer who ships the code of the responsibility to actually understand it (§1.6).</li>
+          <li><strong>A running example, the Parking App</strong> (Chapter 9) — a small full-stack system used to show how language <em>types</em> couple across the layers of a real application, how functional patterns show up inside non-functional languages, and why HTML/CSS and SQL are best understood as logic/constraint languages rather than &ldquo;just markup&rdquo; and &ldquo;just a query language.&rdquo;</li>
+        </ol>
+      </section>
+
+      <div class="part-divider">
+        <p class="kicker">Part I</p>
+        <h2>Foundations: Models of Computation</h2>
+      </div>
+
+      <section id="models-of-computation">
+        <h2 style="border-top:none;">1&ensp;Models of Computation</h2>
+        <p>Before comparing programming languages, it's worth comparing the <em>machines</em> those languages describe. A programming language is, in the end, a notation for instructing some model of computation — and not every model works the same way.</p>
+
+        <h3 id="von-neumann">1.1&ensp;Classical (Von Neumann) Computation</h3>
+        <p>The dominant model since the 1940s: a CPU, RAM, and a stack, executing a deterministic sequence of instructions.</p>
+        <ul>
+          <li>Instructions execute one after another (or in parallel across cores, but each core is still sequential).</li>
+          <li>Given the same initial state and inputs, a Von Neumann machine produces the same output, every time.</li>
+          <li>Almost every general-purpose language — C, Python, Java, JavaScript, even Prolog's host runtime — ultimately compiles or interprets down to this model.</li>
+        </ul>
+        <p>This determinism isn't incidental. It's the property that makes debugging, testing, and auditing possible at all: if a program can't be re-run to reproduce a bug, it can't reliably be fixed.</p>
+
+        <h3 id="neural-networks">1.2&ensp;Neural Networks</h3>
+        <p>Neural networks are a different model of computation, layered on top of Von Neumann hardware:</p>
+        <ul>
+          <li><strong>Architecture</strong>: interconnected nodes (&ldquo;neurons&rdquo;) arranged in input, hidden, and output layers.</li>
+          <li><strong>Input nodes</strong> receive raw data; <strong>hidden nodes</strong> transform it via weighted sums and activation functions; <strong>output nodes</strong> produce the result.</li>
+          <li>The key shift: the &ldquo;program&rdquo; isn't written by hand as explicit steps. It's a set of numeric <strong>weights</strong> learned by training on data — a function <em>fit</em> to examples, not <em>authored</em> as a sequence of instructions.</li>
+        </ul>
+        <p>Evaluating a trained network (a &ldquo;forward pass&rdquo;) is still deterministic arithmetic — but the network was produced by an optimization process, not by writing an algorithm.</p>
+
+        <h3 id="probabilistic-computation">1.3&ensp;Probabilistic Computation, Simulation, and State Estimation</h3>
+        <p><strong>Probabilistic computation</strong> is a model where outcomes are governed by probabilities rather than certainties: a variable might have a 30% chance of one value and a 70% chance of another, so the &ldquo;correct&rdquo; output is a distribution, not a single answer.</p>
+        <ul>
+          <li><strong>Branching view</strong>: a probabilistic assignment can be pictured as splitting a computation into parallel branches, one per outcome, weighted by likelihood. Repeated probabilistic choices or loops make this branching grow exponentially, which quickly makes <em>exact</em> tracking intractable.</li>
+          <li><strong>Monte Carlo simulation</strong> sidesteps that explosion: instead of tracking every outcome, it draws many random samples and uses their aggregate behavior to estimate the true distribution — standard in traffic modeling, weather prediction, and anywhere an exact solution is impractical but a statistically good estimate is enough.</li>
+          <li><strong>Everyday use</strong>: recommendation systems are, underneath, probabilistic models estimating a user's latent preferences from observed behavior.</li>
+          <li><strong>State estimation is a use case in its own right.</strong> Reasoning about the state of a system you can only partially observe — where a robot actually is, what a noisy sensor is really reporting, what a user's true intent is — is itself a form of probabilistic computation, independent of whether the hardware running it is classical or quantum. Bayesian filters, particle filters, and Kalman filters (the backbone of robotics localization and mapping, and of any system fusing noisy sensor data) all represent a system's state as a probability distribution and update it as new evidence arrives. On ordinary classical hardware this distribution has to be <em>simulated</em> — approximated via sampling or closed-form approximations — but the technique is valuable on its own terms, with or without specialized hardware to run it natively.</li>
+          <li><strong>Quantum computing takes the same idea and removes the simulation step.</strong> A classical bit is 0 or 1; a qubit can exist in a <strong>superposition</strong> of both at once. Where the sampling methods above <em>approximate</em> a probability distribution by drawing many samples one at a time, a quantum computer can represent and manipulate that distribution directly, in superposition. Quantum computing doesn't introduce a new kind of question to ask — probabilistic modeling and state estimation are already well-established on classical hardware — it changes whether the answer has to be <em>simulated</em> at all, which is why it's expected to have outsized impact on problems that are exponential under classical simulation, including certain cryptographic and combinatorial search problems.</li>
+        </ul>
+
+        <h3 id="llms-model-of-computation">1.4&ensp;Large Language Models as a Model of Computation</h3>
+        <p>Large language models deserve to be named as their own model of computation — distinct from, but built on, neural networks and probabilistic computation.</p>
+        <p><strong>What makes an LLM a distinct model:</strong></p>
+        <ul>
+          <li><strong>The &ldquo;program&rdquo; is the weights, and the weights aren't hand-written.</strong> As with neural networks generally, an LLM's behavior comes from training on data, not from a programmer enumerating cases. What's distinct about LLMs specifically is <em>what</em> they're trained to compute: a probability distribution over &ldquo;the next token, given everything so far,&rdquo; applied repeatedly to generate sequences.</li>
+          <li><strong>The interface is a prompt, not source code.</strong> Where a Von Neumann program is invoked with arguments and a Prolog program with a query, an LLM is invoked with a context and returns a sampled continuation. The same prompt can, by design, produce different outputs on different runs — inference is a <strong>sampling process</strong> over a learned distribution (governed by parameters like temperature and top-p), not a single deterministic evaluation.</li>
+          <li><strong>It generalizes probabilistic computation to language and reasoning.</strong> Where §1.3 covers probabilistic <em>values</em> and Monte Carlo covers probabilistic <em>simulation</em>, an LLM applies the same idea — model an outcome as a distribution, not a certainty — to sequences of tokens, and by extension to open-ended tasks (summarization, code generation, dialogue) that earlier models of computation have no native way to express.</li>
+        </ul>
+        <p>Every model earlier in this chapter eventually needs a notation for humans to direct it — that's what a programming language <em>is</em>. LLMs are unusual in that their primary notation (natural-language prompting) is deliberately under-specified compared to a grammar-defined programming language (Chapter 7). That looseness is the source of both their flexibility and their central engineering problem — the subject of the next section.</p>
+
+        <h3 id="reliability-repeatable-machines">1.5&ensp;Why Reliable Systems Are Still Built From Repeatable Machines</h3>
+        <p>It would be easy to read §1.5 and conclude that programming has moved, at least in part, from deterministic Von Neumann machines to a fundamentally nondeterministic model. In practice the opposite discipline holds, for the same reason it always has: <strong>reliable systems require repeatability.</strong> A system that can't be reproduced can't be debugged, can't be meaningfully tested, can't be rolled back, and can't be audited. That requirement predates LLMs — it's the same reason procedural languages remain preferred for flight software (§2.1) and the same reason containers exist to make environments reproducible (§8.3) — and it doesn't relax just because a probabilistic model is involved. It sharpens.</p>
+
+        <figure>
+          <div class="figure-frame">
+            <svg viewBox="0 0 900 300" role="img" aria-label="A large outer boundary labeled the system, deterministic and repeatable infrastructure, contains four nodes in sequence: training pipeline, model weights, inference with probabilistic sampling highlighted in accent color, and serving API. The serving API is the only node that exchanges request and response arrows with a client outside the boundary.">
+              <defs>
+                <marker id="fg-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+                </marker>
+              </defs>
+              <g stroke="currentColor" fill="none">
+                <rect x="20" y="50" width="760" height="190" rx="14" stroke-width="1.6" stroke-dasharray="3 4"/>
+              </g>
+              <rect x="46" y="40" width="392" height="22" rx="4" fill="var(--bg)" stroke="currentColor" stroke-width="1"/>
+              <text x="242" y="55" text-anchor="middle" font-size="11" letter-spacing=".04em" fill="currentColor" font-family="var(--sans)">THE SYSTEM — DETERMINISTIC, REPEATABLE INFRASTRUCTURE</text>
+
+              <!-- Node A -->
+              <rect x="50" y="130" width="150" height="70" rx="8" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="125" y="160" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor" font-family="var(--sans)">Training pipeline</text>
+              <text x="125" y="177" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7" font-family="var(--sans)">deterministic build</text>
+
+              <!-- Node B -->
+              <rect x="230" y="130" width="110" height="70" rx="8" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="285" y="160" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor" font-family="var(--sans)">Model</text>
+              <text x="285" y="176" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor" font-family="var(--sans)">weights</text>
+
+              <!-- Node C (accent) -->
+              <rect x="380" y="122" width="190" height="86" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.4"/>
+              <text x="475" y="155" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor" font-family="var(--sans)">Inference</text>
+              <text x="475" y="172" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".8" font-family="var(--sans)">probabilistic sampling</text>
+              <text x="475" y="197" text-anchor="middle" font-size="9.5" letter-spacing=".05em" fill="var(--accent)" font-family="var(--sans)">THE NONDETERMINISTIC COMPONENT</text>
+
+              <!-- Node D -->
+              <rect x="610" y="130" width="150" height="70" rx="8" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="685" y="160" text-anchor="middle" font-size="12.5" font-weight="700" fill="currentColor" font-family="var(--sans)">Serving API</text>
+              <text x="685" y="177" text-anchor="middle" font-size="10.5" fill="currentColor" opacity=".7" font-family="var(--sans)">deterministic</text>
+
+              <!-- Arrows A->B, B->C -->
+              <line x1="200" y1="165" x2="226" y2="165" stroke="currentColor" stroke-width="1.6" marker-end="url(#fg-arrow)"/>
+              <text x="213" y="150" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">produces</text>
+              <line x1="340" y1="165" x2="376" y2="165" stroke="currentColor" stroke-width="1.6" marker-end="url(#fg-arrow)"/>
+              <text x="358" y="150" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">loads</text>
+
+              <!-- Arrows D<->C -->
+              <line x1="606" y1="148" x2="576" y2="148" stroke="currentColor" stroke-width="1.6" marker-end="url(#fg-arrow)"/>
+              <text x="591" y="136" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">prompt</text>
+              <line x1="576" y1="184" x2="606" y2="184" stroke="currentColor" stroke-width="1.6" marker-end="url(#fg-arrow)"/>
+              <text x="591" y="202" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">sampled tokens</text>
+
+              <!-- Client request/response crossing the boundary -->
+              <line x1="835" y1="148" x2="766" y2="148" stroke="currentColor" stroke-width="1.6" marker-end="url(#fg-arrow)"/>
+              <text x="800" y="136" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">request</text>
+              <line x1="766" y1="184" x2="835" y2="184" stroke="currentColor" stroke-width="1.6" marker-end="url(#fg-arrow)"/>
+              <text x="800" y="202" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">response</text>
+              <text x="866" y="160" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor" font-family="var(--sans)">Client</text>
+              <text x="866" y="176" text-anchor="middle" font-size="10" fill="currentColor" opacity=".7" font-family="var(--sans)">browser</text>
+            </svg>
+          </div>
+          <figcaption>The nondeterministic core (inference) is embedded inside a deterministic shell. The client never talks to inference directly — only to the deterministic Serving API, which is also the only node that crosses the system boundary.</figcaption>
+        </figure>
+
+        <p>Look at where an LLM actually sits inside a real software system, in both directions:</p>
+        <ul>
+          <li><strong>The toolchain that builds the model is a traditional, repeatable machine.</strong> Data preprocessing, training scripts, hyperparameter configuration, dependency versions, and hardware allocation are ordinary deterministic software, run under version control, in reproducible (often containerized) environments, exactly like any other build pipeline. The fact that the <em>artifact</em> produced behaves probabilistically doesn't mean the <em>process that produced it</em> is allowed to be unreproducible — without a repeatable training pipeline, a model's behavior can't be regression-tested and a bug in training can't be isolated. Randomness is confined to specific, deliberately controlled points (seeded initialization, seeded sampling), precisely so the surrounding process stays a repeatable machine.</li>
+          <li><strong>The system the model is deployed into is also a traditional, repeatable machine.</strong> The serving infrastructure — API server, routing, authentication, logging, rate limiting, retries, caching — is conventional Von Neumann software with the same reliability requirements as any other production backend (Chapters 8–9). The model's nondeterministic core is deliberately isolated behind a narrow interface: a request goes in, a response comes out, and everything <em>around</em> that boundary is deterministic code that can be tested, versioned, and reasoned about like any other component.</li>
+        </ul>
+
+        <div class="thesis"><p>A probabilistic model of computation does not replace the deterministic machine — it becomes a component embedded inside one.</p></div>
+
+        <p>This was already true of the Monte Carlo simulations and probabilistic models in §1.3: nobody builds an air-traffic control system as an unconstrained probabilistic process, but plenty of reliable systems use a probabilistic model as one well-bounded piece of a larger, deterministic architecture. Reliability is fundamentally a claim about repeatability, and repeatability is a property of the traditional machine surrounding the model, not of the model's own outputs. That is why, even as programming languages are increasingly used to build and orchestrate ML systems, the systems themselves — the build toolchain and the production target alike — remain, and must remain, traditional repeatable machines. That is the mainstay of reliable software, and it isn't going away.</p>
+
+        <h3 id="who-owns-the-code">1.6&ensp;Who Writes the Deterministic Machine, and Who Owns It</h3>
+        <p>§1.5 argued that the machinery around a probabilistic model — the training pipeline, the serving API — has to stay a traditional, repeatable machine for the system to be reliable. That argument has an increasingly important corollary: a growing share of that deterministic machinery is now itself <em>written by an LLM</em>. Code-generation assistants draft functions, tests, SQL migrations, and API handlers — exactly the ordinary, deterministic, Von Neumann code this document spends Parts II and III describing — and the share they draft keeps growing.</p>
+        <p>That doesn't change what §1.5 already established: the resulting code is still deterministic, still version-controlled, still testable, still auditable. What it changes is <em>who is accountable for it</em>. A commit in version control has an author. A pull request has a reviewer. A production incident gets debugged by an engineer, not by whichever tool drafted the function months earlier. None of that responsibility transfers to the LLM that helped write the code — it stays with whoever reviewed it, merged it, and shipped it.</p>
+        <p>This is where §1.5's argument turns from a claim about systems into a claim about people. Repeatability is what makes code <em>possible</em> to debug, test, and audit — it does not make any of that happen automatically, and it never has. Someone still has to read the deterministic code closely enough to know whether it is actually correct, and that is a skill, not a byproduct of the code having been generated by a capable tool.</p>
+
+        <div class="thesis"><p>Understanding doesn't become optional because a tool can write code faster than you can. It becomes the entire job.</p></div>
+
+        <p>As a student, this is the practical stake in the rest of this document. Understanding grammars and ASTs (Chapter 7) is what lets you read and trust a parser regardless of who wrote it. Understanding paradigms (Part II) is what lets you recognize when generated code's structure doesn't fit the problem it's solving. Understanding memory management (§6.3) is what lets you spot a use-after-free introduced into manually-managed code, or a reference cycle a generated Swift type forgot to break. None of that fluency is optional overhead on top of &ldquo;using an LLM well&rdquo; — it <em>is</em> what using one well means for an engineer, because it's what lets you tell, quickly, whether a tool's output deserves your signature. If you can't read and verify the deterministic code a model hands you, you aren't directing the system's architecture or catching its gaps — you're hoping it works. Hoping is not a strategy this document, or the discipline it describes, can build reliable systems on.</p>
+      </section>
+
+      <div class="part-divider">
+        <p class="kicker">Part II</p>
+        <h2>Programming Language Paradigms</h2>
+      </div>
+
+      <section id="paradigm-categories">
+        <h2 style="border-top:none;">2&ensp;Categories of Programming Languages</h2>
+        <p>A <strong>paradigm</strong> is a style of describing computation to a language's underlying model — almost always Von Neumann (Chapter 1). Four categories recur throughout this guide:</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Paradigm</th><th>Answers the question</th><th>Typical examples</th><th>Best suited for</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Procedural</strong></td><td>What sequence of steps?</td><td>C, early Python/JS style</td><td>Deterministic systems needing literal, ordered instructions</td></tr>
+            <tr><td><strong>Object-Oriented</strong></td><td>What objects, with what behavior?</td><td>Java, Python, C++, C#</td><td>Modeling real-world entities; code reuse; large teams</td></tr>
+            <tr><td><strong>Functional</strong></td><td>What transformation of inputs to outputs?</td><td>Haskell, Scala, functional-style JS</td><td>Data pipelines; concurrent/parallel systems</td></tr>
+            <tr><td><strong>Logic / Declarative / Constraint-Based</strong></td><td>What must be true?</td><td>Prolog, SQL, HTML/CSS</td><td>UI layout, database queries, rule-based reasoning</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>2.1&ensp;Procedural</h3>
+        <p>The most direct mapping onto Von Neumann hardware: a program is a sequence of steps, executed in order, like a recipe. It's the natural first paradigm to learn because it mirrors how the CPU actually works, and it remains the right choice wherever a system needs strict, literal, auditable control flow — flight-control software, industrial safety systems, anywhere &ldquo;the program did exactly what the listing says, in that order&rdquo; is itself a requirement. Its cost is that it can become verbose and inflexible as a system grows, particularly once it has to account for many exceptional cases (§2.3, §4.5).</p>
+
+        <h3>2.2&ensp;Object-Oriented</h3>
+        <p>Organizes code around <strong>objects</strong> — bundles of data and the behavior that operates on it — rather than a sequence of steps. Full treatment in Chapter 3.</p>
+
+        <h3>2.3&ensp;Functional</h3>
+        <p>Treats functions as first-class values and structures programs as compositions of functions rather than sequences of state mutation, aiming for <strong>pure functions</strong>: same input, always the same output, no side effects. Full treatment in Chapter 4.</p>
+
+        <h3>2.4&ensp;Logic, Declarative, and Constraint-Based Languages</h3>
+        <p>Describes <strong>what</strong> should be true and leaves <strong>how</strong> to an engine — an inference engine, a query planner, a layout solver. This is broader than &ldquo;logic programming&rdquo; in the Prolog sense; it also covers UI-layout and query languages, which is why this guide treats HTML, CSS, and SQL as members of the same family as Prolog. Chapter 5 develops the case in depth.</p>
+
+        <h3>2.5&ensp;Matching Languages to Users and Problems</h3>
+        <ul>
+          <li><strong>Procedural languages</strong> suit users who need straightforward, literal instructions.</li>
+          <li><strong>Functional/declarative languages</strong> suit users focused on data transformations or specifying an outcome rather than a procedure.</li>
+          <li><strong>General-purpose languages</strong> offer flexibility, but that same flexibility is a risk in safety- or security-critical contexts if misused.</li>
+          <li><strong>Domain-specific languages</strong> intentionally limit what can be expressed, trading generality for safety and predictability — a constraint-based language (§2.4) is, in this sense, a domain-specific language for &ldquo;what state should the UI/data be in,&rdquo; and its restrictions are a feature, not a limitation.</li>
+        </ul>
+      </section>
+
+      <section id="oop-depth">
+        <h2>3&ensp;Object-Oriented Programming in Depth</h2>
+
+        <h3>3.1&ensp;Core Concepts</h3>
+        <ul>
+          <li><strong>Objects and classes</strong> organize code into reusable units modeling entities — e.g. a <code>ParkingSpot</code> object with properties like <code>floor</code> and <code>status</code>.</li>
+          <li><strong>Inheritance</strong> lets subclasses reuse a parent class's attributes and methods.</li>
+          <li><strong>Encapsulation</strong> bundles data and methods within a class while restricting access to internal parts.</li>
+          <li><strong>Abstraction</strong> exposes only essential features, hiding implementation detail.</li>
+          <li><strong>Polymorphism</strong> lets the same method behave differently depending on the object's actual type.</li>
+        </ul>
+        <p><strong>Object-based vs. object-oriented</strong>: object-based programming uses objects without a strict class hierarchy or inheritance; object-oriented programming adds inheritance and hierarchical organization on top.</p>
+
+        <h3>3.2&ensp;Inheritance Models and the Diamond Problem</h3>
+        <ul>
+          <li><strong>Single inheritance</strong>: each class has exactly one parent — simpler, avoids ambiguity (Java's model).</li>
+          <li><strong>Multiple inheritance</strong>: a class can inherit from more than one parent, which introduces the <strong>diamond problem</strong> — if two parents share a common ancestor, the compiler can't unambiguously resolve which inherited member to use. C++ resolves this with <strong>virtual inheritance</strong>; Java and C# simply disallow multiple <em>class</em> inheritance and offer interfaces instead.</li>
+        </ul>
+
+        <h3>3.3&ensp;Interfaces vs. Abstract Classes</h3>
+        <p><strong>Interfaces</strong> define a contract (method signatures) with no implementation and no state — how single-inheritance languages still support &ldquo;multiple inheritance of behavior&rdquo; without the diamond problem, since there's no shared state to conflict over. <strong>Abstract classes</strong> are templates with some implemented methods, offering shared structure while still requiring subclasses to fill in the rest.</p>
+
+        <h3>3.4&ensp;OOP Across Languages</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Language</th><th>Inheritance</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td><strong>C++</strong></td><td>Single and multiple</td><td>Virtual inheritance resolves the diamond problem</td></tr>
+            <tr><td><strong>Java</strong></td><td>Single (classes), multiple (interfaces)</td><td>Interfaces provide flexible, conflict-free composition</td></tr>
+            <tr><td><strong>Python</strong></td><td>Multiple</td><td>No enforced access control; a leading underscore is a <em>convention</em>, not a rule</td></tr>
+            <tr><td><strong>JavaScript</strong></td><td>Prototype-based</td><td>No formal privacy; conventions (or <code>#private</code> fields) simulate it</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="functional-depth">
+        <h2>4&ensp;Functional Programming in Depth</h2>
+
+        <h3>4.1&ensp;Pure Functions and Immutability</h3>
+        <p>A <strong>pure function</strong> returns the same output for the same input and has no side effects — it doesn't modify global state, mutate its arguments, or depend on anything but its inputs. <strong>Immutable data</strong> is never changed in place; a &ldquo;modification&rdquo; produces a new value instead.</p>
+        <p>Functional programming's central goal is to avoid changing state as a program executes at all — where procedural code accumulates state changes over its run (making the current state a function of <em>history</em>, harder to reason about), functional code describes a transformation directly. A useful analogy: procedural programming is like a movie, where you must track changes over time; functional programming is like a picture, where everything simply <em>is</em>, statically.</p>
+
+        <h3>4.2&ensp;Why Functional Code Scales</h3>
+        <ul>
+          <li><strong>Testability</strong>: a pure function always produces the same output for a given input, so it's trivial to write a test for.</li>
+          <li><strong>Parallelization</strong>: with no shared, mutable state, independent functional computations can run concurrently without coordination — a large part of why functional style suits microservices and other horizontally-scaled systems.</li>
+          <li><strong>Compiler optimization</strong>: without state changes to track, a compiler has more freedom to reorder, cache, or parallelize execution.</li>
+        </ul>
+
+        <h3>4.3&ensp;Const, Aliasing, and &ldquo;Everything Is an Object&rdquo;</h3>
+        <p>Declaring a value <code>const</code> locks it after initialization — a lightweight, procedural-language-friendly way to borrow functional programming's immutability guarantee for a single value. <strong>Aliasing</strong> occurs when two variables reference the same underlying object; mutating through one alias is visible through the other. This is a hazard specifically for <em>mutable</em> objects — immutable primitives sidestep it entirely, because &ldquo;modifying&rdquo; them (e.g. <code>y = x + 1</code>) always creates a new object rather than changing the one <code>x</code> still points to.</p>
+        <p>In &ldquo;everything is an object&rdquo; languages (Python, Java, Ruby, Scala), even primitives like integers live on the heap as objects — which is exactly why their immutability matters: without it, <code>y = x</code> followed by a mutation of <code>y</code> could silently change <code>x</code> too.</p>
+
+        <h3>4.4&ensp;Functional Programming on the JVM</h3>
+        <p>Scala runs on the JVM and blends functional and object-oriented paradigms, giving it access to the JVM's JIT-optimized execution while offering the testability and parallelizability benefits of functional style. Immutable objects are central to Scala's design, and Java itself already makes strings and boxed integers immutable by default, for the same aliasing-safety reason.</p>
+
+        <h3 id="fp-in-nonfunctional">4.5&ensp;Functional Patterns in Non-Functional Languages</h3>
+        <p>Most production languages aren't purely functional — JavaScript, Python, and Java all permit mutation, side effects, and global state. But a developer can still write <strong>functionally</strong> inside an imperative language, capturing the same testability and parallelizability benefits from §4.2:</p>
+        <ul>
+          <li>Prefer functions with no side effects — take arguments, return a value, touch nothing else.</li>
+          <li>Prefer returning new data over mutating arguments in place.</li>
+          <li>Prefer higher-order functions (<code>map</code>, <code>filter</code>, <code>reduce</code>) over hand-written loops with a mutable accumulator.</li>
+          <li>Prefer <code>const</code>/<code>final</code>/<code>readonly</code> wherever a value shouldn't change after creation.</li>
+        </ul>
+        <p>A minimal example — summing without ever mutating a loop variable, using recursion instead of a <code>for</code> loop with an accumulator:</p>
+        <div class="codeblock" data-lang="python"><pre><code>def sum_n(n):
+    if n == 0:
+        return 0
+    return n + sum_n(n - 1)</code></pre></div>
+        <p>Chapter 9 develops this pattern in a realistic setting: a fee-calculation function and an availability filter, each written both the procedural way and the functional way, inside the same JavaScript codebase.</p>
+
+        <h3 id="fp-black-box">4.6&ensp;Black-Box Functional vs. Pure Functional Design</h3>
+        <p>§4.1's definition of a pure function — same input, same output, no visible side effects — is a statement about a function's <em>boundary</em>, not about every line of code inside it. That distinction matters enough in practice to name separately:</p>
+        <ul>
+          <li><strong>Pure functional design</strong> enforces immutability all the way down: every intermediate step avoids mutation, typically via recursion and persistent (structurally-shared) data structures rather than loops with mutable state.</li>
+          <li><strong>Black-box functional design</strong> (sometimes called <em>observational purity</em> or <em>referential transparency</em>) only requires that the function's <em>external contract</em> be pure. Internally, it's free to use loops, mutable local variables, and in-place buffer construction — ordinary imperative steps — as long as none of that mutation is visible to, or shared with, the caller. From outside, a black-box-functional implementation is indistinguishable from a pure one.</li>
+        </ul>
+        <p>This is not a compromise or a lesser form of functional programming — it's what functional programming almost always means in practice once performance matters. A fully persistent implementation (reallocating and copying structure on every incremental change) is often prohibitively expensive; a black-box implementation gets the same external guarantees — testability, safety under parallel calls, no aliasing surprises for the caller — while doing the actual work with cheap, local mutation. <code>Array.prototype.reduce</code>, used functionally in §9.3's <code>dailyRevenue</code> pipeline, is a good example: its <em>interface</em> is pure (it doesn't mutate the array you call it on, and repeated calls with the same inputs return the same result), but a typical engine implementation walks the array with an ordinary mutable index and accumulator internally. The caller only ever sees the pure boundary.</p>
+        <div class="callout">
+          <span class="label">Why this matters at scale</span>
+          <p><strong>Large state is exactly where this distinction stops being academic.</strong> Once the state being transformed is large — a big reservation table, a large in-memory cache, a sizable matrix — pure-functional style in the strict sense (copy-on-write at every single step) means allocating a new copy of a large structure for every incremental change, which does not scale. Production functional systems handle this by keeping mutation local and hidden: persistent data structures use structural sharing internally, and hand-written hot paths use a bounded internal buffer that's mutated in place and exposed only once, at the end, as an immutable result. Black-box functional design is often not an optional style choice but a necessity — it's what makes functional-style code hold up against real workloads.</p>
+        </div>
+
+        <h3 id="fp-rest-apis">4.7&ensp;Functional Architecture: REST APIs as Stateless Functions</h3>
+        <p>The same purity idea in §4.1 generalizes past a single function, up to the architecture of an entire service. A RESTful API endpoint, viewed abstractly, is a function from <em>(persisted state, request)</em> to <em>(response, new persisted state)</em> — and REST's defining constraint, <strong>statelessness</strong>, is precisely the requirement that this be the <em>only</em> state the function depends on: each request from a client to a server must contain all the information needed to understand and complete it, with nothing held over in server memory from a previous request.</p>
+        <p>That constraint is a system-level application of §4.1's purity requirement: two requests with the same inputs (the same persisted database state, per Chapter 5's SQL-as-constraints view, plus the same request body) should produce the same response, regardless of which server process handles them or what requests that process handled before. And it earns the same payoff as §4.2's function-level argument, just at a larger scale — because no server instance holds request-to-request state, any server instance can handle any request, which is exactly why stateless REST APIs (like the Parking App's <code>/reservations</code> handler in §9.5) can be load-balanced across many interchangeable server instances while all the actual consistency lives in one place: the database. Statelessness at the API layer is functional purity applied to <em>services</em> instead of <em>functions</em> — the same &ldquo;no side effects, no shared mutable state&rdquo; argument for scalability, one level up.</p>
+      </section>
+
+      <section id="logic-constraint-languages">
+        <h2>5&ensp;Logic and Constraint-Based Languages</h2>
+
+        <h3 id="prolog">5.1&ensp;Prolog</h3>
+        <p>Prolog (&ldquo;Programming in Logic&rdquo;) is a declarative language built from three ingredients:</p>
+        <ul>
+          <li><strong>Facts</strong> — static truths: <code>color(desk, brown).</code></li>
+          <li><strong>Rules</strong> — facts combined to infer new truths: <code>play(X) :- likes(mike, X), likes(mary, X).</code></li>
+          <li><strong>Queries</strong> — questions posed against the database: <code>?- play(X).</code></li>
+        </ul>
+        <p>Prolog's engine searches the facts and rules to satisfy a query; the programmer specifies <em>what</em> is true, not <em>how</em> to search for it. The database updates dynamically with <code>assert</code> (add a fact/rule) and <code>retract</code> (remove one).</p>
+        <p><strong>Applications</strong>: expert systems (diagnosing car, medical, or hardware problems), knowledge representation, real-time logical decision-making, and complex search problems such as geometric reasoning for robots or pathfinding over facts like <code>path(a, b).</code></p>
+        <p><strong>Strengths</strong>: a natural fit for problems with logical constraints; eliminates the need to hand-write search algorithms; high-level abstraction simplifies certain problem classes. <strong>Weaknesses</strong>: inefficient for large datasets compared to SQL or imperative languages; can become computationally expensive for deeply nested logical structures; debugging and optimization are harder than in procedural code.</p>
+
+        <h3 id="html-css-constraints">5.2&ensp;HTML and CSS as Constraint Languages</h3>
+        <p>HTML and CSS are usually introduced as &ldquo;markup&rdquo; and &ldquo;styling,&rdquo; but they belong in the same paradigm family as Prolog: they are <strong>declarative, constraint-based languages</strong>, and the browser is their inference/solving engine.</p>
+        <ul>
+          <li><strong>HTML</strong> declares a document's structure and content as a tree — the <strong>DOM</strong> — not a sequence of drawing instructions. <code>&lt;html&gt;</code> typically contains <code>&lt;head&gt;</code> (metadata) and <code>&lt;body&gt;</code> (content), and elements nest into a hierarchy the browser interprets, not one the author manually renders step by step.</li>
+          <li><strong>CSS</strong> declares <em>constraints</em> on that tree: &ldquo;elements matching this selector should have this background color, this font size, this layout.&rdquo; A rule doesn't say <em>how</em> to paint pixels — it says what should be true of the rendered result, and the layout engine solves for it.</li>
+          <li><strong>Selectors and specificity</strong> are the constraint-resolution mechanism: when multiple rules could apply to the same element, CSS resolves the conflict via a specificity score rather than &ldquo;whichever rule ran last&rdquo; — the kind of conflict resolution a constraint solver needs.</li>
+          <li><strong>Flexbox and grid</strong> make the constraint-solving nature explicit: a flex container isn't told the pixel width of each child; it's given constraints (<code>flex-grow</code>, <code>flex-shrink</code>, <code>flex-basis</code>) and <em>solves</em> for a layout that satisfies them — the same way Prolog's engine solves a query against a rule set.</li>
+        </ul>
+
+        <h3 id="sql-constraints">5.3&ensp;SQL as a Constraint Language</h3>
+        <p>SQL fits the same family. A <code>SELECT</code> specifies constraints on the desired result set (<code>WHERE</code>, <code>JOIN ... ON</code>, <code>GROUP BY</code>) rather than a retrieval algorithm; the query planner decides <em>how</em> to execute it (index scan vs. sequential scan, join order) — the same what/how split as §2.4.</p>
+        <ul>
+          <li><strong>Schema as constraints</strong>: <code>PRIMARY KEY</code>, <code>FOREIGN KEY</code>, <code>NOT NULL</code>, and <code>CHECK</code> constrain what data is even allowed to exist, enforced by the database rather than application code.</li>
+          <li><strong>CRUD</strong>: <code>INSERT</code> (create), <code>SELECT</code> (read), <code>UPDATE</code>, <code>DELETE</code> — the operations that change or query the fixed state a schema constrains.</li>
+          <li><strong>Joins</strong> combine rows from multiple tables based on a relationship, letting normalized data be queried back together without duplicating it.</li>
+          <li><strong>Normalization / DRY</strong>: store each fact once, so updates stay consistent — the database-design version of &ldquo;don't repeat yourself.&rdquo;</li>
+          <li><strong>Transactions</strong> treat a group of state changes as a single all-or-nothing unit, which is what makes SQL safe for concurrent, multi-user systems like banks or social platforms.</li>
+        </ul>
+
+        <h3>5.4&ensp;The Common Thread: What, Not How</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Language</th><th>You declare&hellip;</th><th>The engine solves&hellip;</th></tr></thead>
+          <tbody>
+            <tr><td>Prolog</td><td>Facts, rules, a query</td><td>Which facts/rules satisfy the query (search/backtracking)</td></tr>
+            <tr><td>HTML/CSS</td><td>Structure and style constraints</td><td>Where each pixel actually goes (layout algorithm)</td></tr>
+            <tr><td>SQL</td><td>The shape of the desired result set</td><td>How to retrieve/join/filter it efficiently (query planning)</td></tr>
+          </tbody>
+        </table></div>
+        <p>This is why HTML/CSS and SQL are grouped with Prolog in this guide rather than treated as an unrelated &ldquo;web stuff&rdquo; category.</p>
+      </section>
+
+      <div class="part-divider">
+        <p class="kicker">Part III</p>
+        <h2>Language Mechanics</h2>
+      </div>
+
+      <section id="typing-memory-mutability">
+        <h2 style="border-top:none;">6&ensp;Typing, Memory, and Mutability</h2>
+
+        <h3>6.1&ensp;Static vs. Dynamic Typing</h3>
+        <p><strong>Dynamically typed</strong> languages (JavaScript, Python) allow &ldquo;type-free&rdquo; code, fast to write but a maintenance risk as a codebase grows, since type mismatches surface only at runtime. <strong>Statically typed</strong> languages (or supersets, like TypeScript over JavaScript) catch type errors at compile time — typing functions as a lightweight, automated form of testing.</p>
+
+        <h3>6.2&ensp;Stack, Heap, and &ldquo;Everything Is an Object&rdquo;</h3>
+        <p><strong>Stack</strong> and <strong>heap</strong> are the two memory regions used at runtime. In languages like C++, the programmer explicitly chooses which objects live where. In <strong>&ldquo;everything is an object&rdquo;</strong> languages (Python, Java, Ruby), most values live on the heap and variables are references to them — simplifying the object model, but making <strong>immutability</strong> important for primitives, exactly to avoid the aliasing hazard from §4.3.</p>
+
+        <h3>6.3&ensp;Aliasing, Immutability, and Garbage Collection</h3>
+        <p>Once objects live on a heap, something has to reclaim memory no longer reachable:</p>
+        <ul>
+          <li><strong>Reference counting</strong>: each object tracks how many references point to it; the count hitting zero frees it. Simple and deterministic, but cannot handle <strong>cyclic references</strong> — two nodes pointing at each other never reach zero, even after both are otherwise unreachable.</li>
+          <li><strong>Mark-and-sweep</strong>: pauses execution, traverses live objects from a set of roots, and deallocates whatever wasn't reached. Handles cycles correctly, but the pause makes it unsuitable for real-time systems.</li>
+          <li><strong>Generational garbage collection</strong>: groups objects by lifespan (most objects die young) — the strategy most general-purpose collectors use today.</li>
+        </ul>
+
+        <p><strong>Why mark-and-sweep and real-time systems don't mix.</strong> A real-time deadline is a promise about <em>when</em> work finishes, not just <em>whether</em> it finishes. Mark-and-sweep pays for its correctness — handling cycles, reliably reclaiming everything unreachable — with a &ldquo;stop-the-world&rdquo; pause whose timing and length aren't fully predictable from the application's point of view: the collector runs when <em>it</em> decides memory pressure warrants it, not when the application would prefer to be interrupted. A pause landing mid-deadline (an engine-control loop, an audio callback, a flight-control cycle) is a missed deadline. That unpredictability — not raw speed — is the actual disqualifying property for real-time and safety-critical code.</p>
+
+        <p><strong>This is why C, C++, and Rust don't rely on a collector at all, for two different reasons:</strong></p>
+        <ul>
+          <li><strong>C and C++</strong> never adopted one in the first place. Manual allocation/deallocation (<code>malloc</code>/<code>free</code>, <code>new</code>/<code>delete</code>) puts the timing of every free entirely under the programmer's control, exactly the determinism real-time and systems-level code (§2.1) needs — at the cost of the programmer being fully responsible for getting it right, with no compiler-enforced safety net. Use-after-free, double-free, and dangling-pointer bugs are the price of that manual control.</li>
+          <li><strong>Rust</strong> removes the <em>need</em> for a collector through a third strategy: an <strong>ownership and borrowing model</strong>, checked entirely at compile time. Every value has exactly one owner; when that owner goes out of scope, the compiler inserts the deallocation there, deterministically, with no separate collector pass ever running. Rust also closes the safety gap C/C++ leave open: the borrow checker statically proves a value is never freed while another part of the program still holds a reference to it, ruling out use-after-free and double-free <em>before the program compiles</em>, rather than leaving them as a runtime risk.</li>
+        </ul>
+
+        <div class="table-wrap"><table>
+          <thead><tr><th>Strategy</th><th>Frees memory&hellip;</th><th>Real-time suitability</th><th>Characteristic failure mode</th></tr></thead>
+          <tbody>
+            <tr><td>Reference counting (Swift's ARC)</td><td>Immediately, when a count hits zero</td><td>Good in the common case — no scheduled, separate pause</td><td>A large object graph's last reference dropping can cascade into many synchronous frees on one thread</td></tr>
+            <tr><td>Mark-and-sweep / generational GC (Java, Python, JS engines)</td><td>Periodically, in batches, whenever the collector decides to run</td><td>Poor — the pause is unpredictable in timing and length</td><td>A pause can land inside a hard deadline, which is why real-time systems avoid it entirely</td></tr>
+            <tr><td>Ownership &amp; borrowing (Rust)</td><td>Deterministically, at a compile-time-determined scope exit — no runtime collector at all</td><td>Excellent — every free happens inline, at a known point</td><td>The compiler rejects programs it can't prove memory-safe; some valid patterns need restructuring (or <code>unsafe</code>) to compile</td></tr>
+          </tbody>
+        </table></div>
+
+        <p>Swift takes a middle path — reference counting (avoiding mark-and-sweep's scheduled pause) plus <strong>weak references</strong> to explicitly break cycles — which is why real-time-adjacent applications favor Swift's model over Java's or Python's stop-the-world collectors.</p>
+        <div class="callout callout--warn">
+          <span class="label">The beachball tradeoff</span>
+          <p>&ldquo;No GC pause&rdquo; is not the same claim as &ldquo;no possible pause.&rdquo; ARC's retain/release bookkeeping runs inline with ordinary code rather than in a separate collector pass, so its cost is spread out — <em>except</em> when it isn't. Dropping the last reference to one large, deeply-nested object graph (a big view hierarchy, a large cached response) can trigger a cascading chain of deallocations synchronously, on whatever thread let go of it — often the UI/main thread. That cascade is exactly what produces macOS's spinning &ldquo;beachball&rdquo; cursor: not a scheduled GC pause, but a burst of many small, deterministic ARC frees landing on the same thread at the same instant. Eliminating a GC's <em>scheduled</em> pause doesn't eliminate the <em>possibility</em> of a pause — it changes where that cost can show up and who's responsible for controlling it.</p>
+        </div>
+
+        <h3>6.4&ensp;Call by Value, Call by Reference, and Call by Value-of-Reference</h3>
+        <ul>
+          <li><strong>Call by value</strong>: a copy of the argument is passed; changes inside the function don't affect the caller. Common for primitives in C, Python, and JavaScript.</li>
+          <li><strong>Call by reference</strong>: the address of the variable is passed, so the function can modify the caller's original value directly (e.g. C++'s <code>int &amp;x</code>).</li>
+          <li><strong>Call by value, where the value is a reference</strong>: what Python and JavaScript actually do. Primitives are immutable, so they <em>behave</em> as if passed by value. Mutable types are passed as a copy of a reference — reassigning the parameter doesn't affect the caller, but mutating the object it points to does:</li>
+        </ul>
+        <div class="codeblock" data-lang="python"><pre><code>def modify_list(lst):
+    lst.append(4)
+
+a = [1, 2, 3]
+modify_list(a)
+print(a)  # [1, 2, 3, 4] — the mutation is visible outside the function</code></pre></div>
+      </section>
+
+      <section id="compilation-parsing">
+        <h2>7&ensp;Compilation and Parsing</h2>
+
+        <h3>7.1&ensp;The Compiler Pipeline</h3>
+        <ol>
+          <li><strong>Lexical analysis</strong> — turns the raw byte/character stream into <strong>tokens</strong>: keywords, operators, identifiers.</li>
+          <li><strong>Syntax analysis (parsing)</strong> — checks the token sequence against the grammar and builds a parse tree or AST.</li>
+          <li><strong>Semantic analysis</strong> — checks that the code's meaning is valid (e.g. type checking).</li>
+          <li><strong>Intermediate code generation</strong> — lowers the tree into an intermediate representation.</li>
+          <li><strong>Optimization</strong> — refines the intermediate code for performance.</li>
+          <li><strong>Code generation</strong> — converts optimized intermediate code into machine code or bytecode.</li>
+          <li><strong>Assembly and linking</strong> — combines machine code segments into a final executable.</li>
+        </ol>
+
+        <h3>7.2&ensp;Character Encoding</h3>
+        <p>Before tokenizing, a byte stream has to become a character stream: <strong>UTF-8</strong> is a variable-length encoding (ASCII takes one byte, other code points take more) and the default on Unix-like systems; <strong>UTF-16</strong> uses fixed 2-byte units for the common case, used by Windows and the JVM.</p>
+
+        <h3>7.3&ensp;Grammars, Parse Trees, and ASTs</h3>
+        <p>A <strong>grammar</strong> defines the valid structure of a language. A <strong>context-free grammar</strong> applies each rule to a nonterminal independently of its surrounding context. A <strong>parse tree</strong> documents every grammar substitution used to derive an expression — thorough, but verbose. An <strong>abstract syntax tree (AST)</strong> keeps only the operations and values that matter semantically; it's what later compiler stages actually operate on. For <code>3 + 4 * 2</code>, the AST is simply:</p>
+        <div class="codeblock" data-lang="ast"><pre><code>      +
+     / \
+    3   *
+       / \
+      4   2</code></pre></div>
+
+        <h3>7.4&ensp;Recursive Descent vs. Shift-Reduce Parsing</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th></th><th>Recursive descent</th><th>Shift-reduce</th></tr></thead>
+          <tbody>
+            <tr><td>Mechanism</td><td>Each grammar rule becomes a function; functions call each other recursively (top-down)</td><td>Bottom-up: tokens are pushed (&ldquo;shifted&rdquo;) onto a stack and combined (&ldquo;reduced&rdquo;) via a state machine</td></tr>
+            <tr><td>Pros</td><td>Simple, intuitive to hand-write</td><td>Handles a broader, more complex range of grammars, including left recursion</td></tr>
+            <tr><td>Cons</td><td>Breaks on <strong>left-recursive</strong> grammars — must be transformed to be right-recursive</td><td>Typically requires a generator tool (YACC, Bison) rather than being hand-written</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>7.5&ensp;Regular Expressions</h3>
+        <p>Regex is a compact language for matching patterns in text — the standard tool for input validation, tokenization, and text search.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Construct</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td><code>^</code> / <code>$</code></td><td>Start / end of string</td></tr>
+            <tr><td><code>[ ]</code></td><td>Character class, e.g. <code>[a-z]</code></td></tr>
+            <tr><td><code>|</code></td><td>Alternation (&ldquo;or&rdquo;)</td></tr>
+            <tr><td><code>( )</code></td><td>Grouping</td></tr>
+            <tr><td><code>{n,m}</code></td><td>Between <code>n</code> and <code>m</code> repetitions</td></tr>
+            <tr><td><code>* + ?</code></td><td>Zero-or-more / one-or-more / zero-or-one</td></tr>
+            <tr><td><code>.</code></td><td>Any character except newline</td></tr>
+            <tr><td><code>\</code></td><td>Escapes a special character</td></tr>
+          </tbody>
+        </table></div>
+        <p>A username pattern requiring a leading letter: <code>^[A-Za-z][A-Za-z0-9]{0,19}$</code> (max 20 characters); a hex-integer pattern: <code>^0[xX][0-9A-Fa-f]+$</code>. Regex libraries are standardized across languages precisely so this kind of pattern doesn't need a custom implementation per project.</p>
+
+        <h3>7.6&ensp;Worked Example: Parsing JSON</h3>
+        <p>A small, complete illustration of §7.1–§7.3: parsing a JSON string into an AST.</p>
+        <p><strong>Grammar (informal)</strong>: <code>element</code> → a <code>value</code> with optional whitespace · <code>value</code> → object | array | literal | number | string · <code>object</code> → <code>{}</code> | <code>{members}</code> · <code>members</code> → <code>member (, member)*</code> · <code>member</code> → <code>string : element</code>.</p>
+        <p><strong>AST node classes</strong> (one per grammar construct): <code>ObjectNode(members)</code>, <code>ArrayNode(elements)</code>, <code>MemberNode(key, value)</code>, <code>LiteralNode(value)</code>, <code>NumberNode(number)</code>, <code>StringNode(string)</code>.</p>
+        <p>For the input <code>{ "x": [1, 2], "y": [3, true] }</code>, the parser produces an <code>ObjectNode</code> with two <code>MemberNode</code>s — <code>"x"</code> mapping to <code>ArrayNode([NumberNode(1), NumberNode(2)])</code>, and <code>"y"</code> mapping to <code>ArrayNode([NumberNode(3), LiteralNode(true)])</code>.</p>
+        <p>Implementation notes: start from the highest-level rule (<code>parse_element</code>) and work down; centralize whitespace stripping in helper functions; raise a clear <code>SyntaxError</code> on malformed input; test against empty structures (<code>{}</code>, <code>[]</code>), nested structures, and deliberately invalid input.</p>
+      </section>
+
+      <section id="runtimes-platforms">
+        <h2>8&ensp;Runtimes, Platforms, and Reproducible Builds</h2>
+
+        <h3>8.1&ensp;The JVM</h3>
+        <p>The <strong>Java Virtual Machine</strong> lets one bytecode format run unmodified across platforms — &ldquo;write once, run anywhere.&rdquo; Source compiles to bytecode, which the JVM executes, using <strong>Just-In-Time (JIT) compilation</strong> to optimize hot code paths at runtime. Scala and Kotlin both target the JVM to inherit this portability and optimization.</p>
+        <p>Android is a notable exception: rather than shipping Sun/Oracle's JVM, Android historically used its own library mimicking Java's syntax and standard library without licensing the JVM itself — a decision that led to a long legal dispute between Google and Oracle over the Java APIs, and part of why Kotlin (JVM-compatible but independently developed) became Android's preferred language. Android compiles directly to native machine code rather than running a traditional JVM, trading portability for mobile performance.</p>
+
+        <h3>8.2&ensp;.NET and the CLR</h3>
+        <p>Microsoft's counterpart to the JVM: the <strong>Common Language Runtime (CLR)</strong> runs C# and other .NET languages, using the same &ldquo;compile to an intermediate representation, then optimize at runtime&rdquo; strategy as the JVM.</p>
+
+        <h3 id="containers-reproducibility">8.3&ensp;Containers as a Portability and Reproducibility Layer</h3>
+        <p>Containers (e.g. Docker) abstract away the underlying machine, the same way a VM or a language runtime does, but more cheaply: rather than running a full guest OS, a container shares the host kernel and isolates only the process and its dependencies. That makes a development or deployment environment <strong>lightweight and exactly reproducible</strong> across machines — the same guarantee from §1.5: a system's <em>infrastructure</em> needs to be repeatable even when what runs inside it doesn't need to be identical every time. Cross-architecture differences (ARM Apple Silicon vs. Intel) can still surface here, sometimes requiring an emulation layer, at a performance cost.</p>
+      </section>
+
+      <div class="part-divider">
+        <p class="kicker">Part IV</p>
+        <h2>Case Study</h2>
+      </div>
+
+      <section id="parking-app">
+        <h2 style="border-top:none;">9&ensp;The Parking App: One System, Many Languages</h2>
+        <p>The rest of this guide has treated paradigms and mechanics in isolation. Real systems mix them, layer by layer, and the mixing isn't arbitrary — it follows directly from Chapter 2's observation that different paradigms answer different questions well. This chapter works through one small system, a <strong>Parking App</strong> that reserves spots in a garage, to make that concrete.</p>
+
+        <h3 id="parking-app-architecture">9.1&ensp;Architecture</h3>
+        <p>The app has three tiers, each in a language chosen for what that tier needs to express:</p>
+
+        <figure>
+          <div class="figure-frame">
+            <svg viewBox="0 0 860 260" role="img" aria-label="Three boxes left to right: Browser running React, HTML and CSS, declarative UI; Node.js and Express in JavaScript, procedural and functional; PostgreSQL in SQL, declarative data. Arrows between the browser and server are labeled reserve spot JSON going right and available spots JSON going left. Arrows between the server and database are labeled parameterized query going right and rows going left.">
+              <defs>
+                <marker id="arch-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                  <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+                </marker>
+              </defs>
+
+              <rect x="30" y="70" width="230" height="120" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="145" y="108" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" font-family="var(--sans)">Browser</text>
+              <text x="145" y="128" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75" font-family="var(--sans)">React · HTML/CSS</text>
+              <text x="145" y="146" text-anchor="middle" font-size="10.5" fill="var(--amber)" font-family="var(--sans)">declarative UI</text>
+
+              <rect x="315" y="70" width="230" height="120" rx="10" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="2.2"/>
+              <text x="430" y="108" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" font-family="var(--sans)">Node.js + Express</text>
+              <text x="430" y="128" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75" font-family="var(--sans)">JavaScript</text>
+              <text x="430" y="146" text-anchor="middle" font-size="10.5" fill="var(--accent)" font-family="var(--sans)">procedural + functional</text>
+
+              <rect x="600" y="70" width="230" height="120" rx="10" fill="var(--surface)" stroke="currentColor" stroke-width="1.4"/>
+              <text x="715" y="108" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor" font-family="var(--sans)">PostgreSQL</text>
+              <text x="715" y="128" text-anchor="middle" font-size="11" fill="currentColor" opacity=".75" font-family="var(--sans)">SQL</text>
+              <text x="715" y="146" text-anchor="middle" font-size="10.5" fill="var(--amber)" font-family="var(--sans)">declarative data</text>
+
+              <line x1="260" y1="95" x2="311" y2="95" stroke="currentColor" stroke-width="1.6" marker-end="url(#arch-arrow)"/>
+              <text x="285" y="84" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">reserve spot · JSON</text>
+              <line x1="311" y1="165" x2="260" y2="165" stroke="currentColor" stroke-width="1.6" marker-end="url(#arch-arrow)"/>
+              <text x="285" y="184" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">available spots · JSON</text>
+
+              <line x1="545" y1="95" x2="596" y2="95" stroke="currentColor" stroke-width="1.6" marker-end="url(#arch-arrow)"/>
+              <text x="570" y="84" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">parameterized query</text>
+              <line x1="596" y1="165" x2="545" y2="165" stroke="currentColor" stroke-width="1.6" marker-end="url(#arch-arrow)"/>
+              <text x="570" y="184" text-anchor="middle" font-size="10" fill="currentColor" opacity=".75" font-family="var(--sans)">rows</text>
+            </svg>
+          </div>
+          <figcaption>Each tier's paradigm matches the shape of the problem it solves: constraint-based at the edges (UI, data), procedural/functional in the middle (orchestration and business logic).</figcaption>
+        </figure>
+
+        <p>A minimal schema:</p>
+        <div class="codeblock case" data-lang="sql"><pre><code>CREATE TABLE spots (
+  id SERIAL PRIMARY KEY,
+  floor INT NOT NULL,
+  spot_number INT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open'
+    CHECK (status IN ('open', 'reserved', 'occupied'))
+);
+
+CREATE TABLE reservations (
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL REFERENCES users(id),
+  spot_id INT NOT NULL REFERENCES spots(id),
+  plate TEXT NOT NULL,
+  start_time TIMESTAMP NOT NULL,
+  end_time TIMESTAMP,
+  CHECK (end_time IS NULL OR end_time > start_time)
+);</code></pre></div>
+
+        <h3 id="parking-app-coupling">9.2&ensp;Why the Coupling Is Not an Accident</h3>
+        <p>It's tempting to describe a full-stack app as &ldquo;coupling three unrelated languages,&rdquo; but each choice tracks Chapter 2's paradigm categories directly:</p>
+        <ul>
+          <li>The database layer is declarative/constraint-based (§5.3) because its problem — &ldquo;what data may exist, and what subset satisfies this query&rdquo; — is naturally a <em>what</em>, not a <em>how</em>.</li>
+          <li>The frontend's structure/style layer is declarative/constraint-based (§5.2) for the same reason: &ldquo;what should this page look like&rdquo; is a <em>what</em>.</li>
+          <li>The backend layer is a general-purpose, multi-paradigm language (JavaScript) because request handling is inherently procedural (do these steps, in this order, for this HTTP request) while its data transformations are naturally functional (§4.5) — a general-purpose language lets both styles coexist where each fits best.</li>
+          <li>JSON is the interchange format at every boundary precisely because it's a lightweight serialization of the same tree-shaped data that both HTML's DOM (§5.2) and JavaScript's object model already use — the coupling between layers is real, but it's coupling through a shared, simple data shape, not through shared code.</li>
+        </ul>
+
+        <h3 id="parking-app-functional-js">9.3&ensp;Functional Patterns in the Parking App's JavaScript</h3>
+        <p>JavaScript is not a functional language — it has mutable objects, arrays, and module-level state — but the backend's business logic reads far better, and tests far more easily (§4.2), written in a functional style. Compare a fee calculation written procedurally:</p>
+        <div class="codeblock case" data-lang="js"><pre><code>function calculateFeeProcedural(reservation) {
+  let minutes = (reservation.endTime - reservation.startTime) / 60000;
+  let fee = minutes * RATE_PER_MINUTE;
+  if (fee &lt; MINIMUM_FEE) {
+    fee = MINIMUM_FEE;
+  }
+  return Math.round(fee);
+}</code></pre></div>
+        <p>against the same logic as a pure function:</p>
+        <div class="codeblock case" data-lang="js"><pre><code>const calculateFee = (reservation, rate = RATE_PER_MINUTE, minimum = MINIMUM_FEE) =&gt; {
+  const minutes = (reservation.endTime - reservation.startTime) / 60000;
+  return Math.max(Math.round(minutes * rate), minimum);
+};</code></pre></div>
+        <p>The functional version takes its rate and minimum as arguments rather than reading module-level constants directly, never reassigns a variable, and is trivial to unit-test with fixed inputs. The gap widens once fees need aggregating across many reservations — the functional style composes with <code>filter</code>/<code>map</code>/<code>reduce</code> instead of a hand-rolled mutable-accumulator loop:</p>
+        <div class="codeblock case" data-lang="js"><pre><code>// Functional: no mutable accumulator, reads as a pipeline
+const dailyRevenue = reservations
+  .filter(r =&gt; r.status === "completed")
+  .map(calculateFee)
+  .reduce((total, fee) =&gt; total + fee, 0);
+
+// Procedural: state accumulates across a mutable loop variable
+let dailyRevenueProcedural = 0;
+for (let i = 0; i &lt; reservations.length; i++) {
+  if (reservations[i].status === "completed") {
+    dailyRevenueProcedural += calculateFeeProcedural(reservations[i]);
+  }
+}</code></pre></div>
+        <p>Both compute the same number. The functional version is the one that's safe to run in parallel across reservation batches (§4.2), and the one where a bug can't hide in a stray mutation of <code>dailyRevenueProcedural</code> from unrelated code elsewhere in the loop body.</p>
+        <p>The same pattern governs a spot-availability check:</p>
+        <div class="codeblock case" data-lang="js"><pre><code>const availableSpots = spots.filter(spot =&gt; spot.status === "open");</code></pre></div>
+        <p>&mdash; a one-line constraint (&ldquo;give me the spots where status is open&rdquo;), not a loop that manually builds up a result array.</p>
+
+        <h3 id="parking-app-constraints">9.4&ensp;HTML/CSS and SQL as the App's Constraint Layers</h3>
+        <p>The Parking App is a clean illustration of §5.4's &ldquo;what, not how&rdquo; split, because it uses <em>both</em> constraint languages side by side for two different kinds of state:</p>
+        <ul>
+          <li><strong>CSS constrains the visual state</strong> of the spot grid — e.g. a rule that any <code>.spot</code> with class <code>.spot--open</code> renders green, regardless of which specific spot elements exist at a given moment. The browser's layout engine resolves this for however many spots are actually on the page; the app never manually computes pixel positions.</li>
+          <li><strong>SQL constrains the data state</strong> of the garage — e.g. the <code>CHECK (status IN ('open', 'reserved', 'occupied'))</code> constraint in §9.1 makes an invalid status impossible to store, regardless of which code path inserts or updates a row. The database enforces this uniformly, the same way CSS specificity uniformly resolves conflicting style rules (§5.2).</li>
+        </ul>
+        <p>Both layers let the application code (§9.3) stay focused on procedural/functional business logic, because &ldquo;what states are even valid&rdquo; has already been pushed down into a constraint layer that enforces itself.</p>
+
+        <h3 id="parking-app-async">9.5&ensp;Asynchronous Programming in the Booking Flow</h3>
+        <p>The backend's request handlers are I/O-bound — every reservation involves waiting on the database — exactly the case async/await was designed for. Each handler is also a concrete instance of §4.7's REST-as-function argument: it reads current state fresh from PostgreSQL, computes a response, writes back new state, and retains nothing in server memory afterward — which is what lets any server instance handle any reservation request.</p>
+        <ul>
+          <li><strong>Blocking style</strong> (traditional procedural code in C or Python) waits for each operation to finish before moving to the next line, which would leave the server unable to handle other requests while one reservation's database round-trip is pending.</li>
+          <li><strong>Non-blocking / event-driven style</strong> (Node.js's model) lets the server start a request, move on to other work, and resume once its I/O completes — handled historically via <strong>callbacks</strong>, which nest awkwardly for multi-step flows (&ldquo;callback hell&rdquo;), then via <strong>promises</strong>, and now idiomatically via <strong>async/await</strong>, which lets asynchronous code read like synchronous code:</li>
+        </ul>
+        <div class="codeblock case" data-lang="js"><pre><code>app.post("/reservations", async (req, res) =&gt; {
+  const spot = await findAvailableSpot(req.body.floor);
+  if (!spot) {
+    return res.status(409).json({ error: "No open spots on that floor" });
+  }
+  const reservation = await createReservation(spot.id, req.body);
+  res.status(201).json(reservation);
+});</code></pre></div>
+        <p>Node's <strong>event loop</strong> is what makes this scale: rather than dedicating a thread to each pending reservation, it continuously checks for completed I/O and resumes the corresponding handler — why a Node.js backend can serve many concurrent reservation requests with comparatively few server resources.</p>
+
+        <h3 id="parking-app-security">9.6&ensp;Security: Where Language Design Meets the Parking App</h3>
+        <p>Two vulnerability classes surface directly at the boundary where one language's output becomes another language's input:</p>
+        <p><strong>SQL injection</strong>, at the JavaScript → SQL boundary. If a license-plate lookup is built by string-concatenating user input into a query, an attacker can supply input that changes the query's <em>meaning</em>, not just its data:</p>
+        <div class="codeblock case" data-lang="js"><pre><code>// Vulnerable: user input becomes part of the SQL syntax itself
+const query = `SELECT * FROM reservations WHERE plate = '${plate}'`;
+
+// Safe: the value is passed separately from the query structure
+const result = await db.query(
+  "SELECT * FROM reservations WHERE plate = $1",
+  [plate]
+);</code></pre></div>
+        <p>This is also where §1.6's ownership point gets concrete: an LLM-drafted handler can <em>look</em> like it follows the parameterized pattern above — a <code>$1</code> placeholder here, a <code>db.query</code> call there — while a different line elsewhere in the same file quietly concatenates unsanitized input. The code is deterministic and, in principle, fully auditable; whether that vulnerability actually gets caught depends entirely on whether a human reviewer understands the pattern well enough to check for it.</p>
+        <p><strong>HTML injection / XSS</strong>, at the JavaScript → HTML boundary. If a reservation note field is rendered into the page without filtering, an attacker-supplied <code>&lt;script&gt;</code> tag would execute in another user's browser, with access to that user's cookies and session.</p>
+        <div class="callout callout--warn">
+          <span class="label">Cross-cutting principle</span>
+          <p>SQL injection and HTML/XSS are the same defect at two different language boundaries: never let untrusted input be interpreted as <strong>structure</strong> (SQL syntax, HTML tags) rather than <strong>data</strong>. A parameterized query keeps a plate number from becoming SQL; input filtering keeps a reservation note from becoming a script tag.</p>
+        </div>
+        <p><strong>Frontend vs. backend validation</strong>: the frontend validates a plate format or a reservation time range to give the user immediate, helpful feedback; the backend re-validates the same fields because frontend validation can always be bypassed by an attacker who skips the UI entirely and calls the API directly. Frontend validation is a UX feature; backend validation is the actual security boundary.</p>
+      </section>
+
+      <div class="part-divider">
+        <p class="kicker">Reference</p>
+        <h2>Appendices</h2>
+      </div>
+
+      <section id="language-selection">
+        <h2 style="border-top:none;">Appendix A — Language Selection Quick Reference</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Concern</th><th>Points toward</th></tr></thead>
+          <tbody>
+            <tr><td>Modeling real-world entities, large team, code reuse</td><td>Object-oriented (Java, C#, Python)</td></tr>
+            <tr><td>Data transformation pipeline, need to parallelize/scale</td><td>Functional (Scala, Haskell, functional-style JS)</td></tr>
+            <tr><td>Strict, literal, auditable step order (safety-critical)</td><td>Procedural (C)</td></tr>
+            <tr><td>&ldquo;What must be true,&rdquo; not &ldquo;how to compute it&rdquo;</td><td>Declarative/constraint-based (Prolog, SQL, HTML/CSS)</td></tr>
+            <tr><td>Enterprise backend, existing JVM investment</td><td>Java, Scala, Kotlin</td></tr>
+            <tr><td>.NET ecosystem, Microsoft-stack shop</td><td>C#</td></tr>
+            <tr><td>High-performance / real-time (games, embedded)</td><td>C++</td></tr>
+            <tr><td>Full-stack web, one language across tiers</td><td>JavaScript/TypeScript (+ Node.js)</td></tr>
+            <tr><td>Data science / ML tooling, fast prototyping</td><td>Python</td></tr>
+            <tr><td>Large, long-lived codebase in a dynamic language</td><td>Add a static layer (e.g. TypeScript over JavaScript)</td></tr>
+          </tbody>
+        </table></div>
+        <div class="callout">
+          <span class="label">Caveat</span>
+          <p>Popularity rankings (GitHub activity, Stack Overflow tags) are biased by what's public and by what gets asked about — plenty of enterprise code is neither — and a language's popularity in one context (Python in classrooms and data science) doesn't automatically transfer to suitability in another (embedded real-time control, where procedural C still dominates for the reasons in §2.1).</p>
+        </div>
+      </section>
+
+      <section id="glossary">
+        <h2>Appendix B — Glossary</h2>
+        <dl class="glossary">
+          <dt>AST (Abstract Syntax Tree)</dt><dd>A condensed parse tree keeping only semantically meaningful structure.</dd>
+          <dt>Aliasing</dt><dd>Two references pointing at the same mutable object, so a change through one is visible through the other.</dd>
+          <dt>CLR</dt><dd>.NET's Common Language Runtime, the .NET counterpart to the JVM.</dd>
+          <dt>Constraint-based language</dt><dd>A declarative language whose statements specify allowed/desired states rather than steps (HTML/CSS, SQL, Prolog).</dd>
+          <dt>Diamond problem</dt><dd>The ambiguity that arises when a class multiply-inherits from two classes sharing a common ancestor.</dd>
+          <dt>Encapsulation</dt><dd>Bundling data and behavior in a class while restricting external access to internals.</dd>
+          <dt>Garbage collection</dt><dd>Automatic reclamation of heap memory no longer reachable by the program.</dd>
+          <dt>Immutability</dt><dd>A value that cannot be changed after creation; any &ldquo;modification&rdquo; produces a new value instead.</dd>
+          <dt>JIT (Just-In-Time) compilation</dt><dd>Compiling hot code paths to native machine code at runtime, used by the JVM and CLR.</dd>
+          <dt>LLM (Large Language Model)</dt><dd>A neural network trained to model a probability distribution over token sequences; see §1.4.</dd>
+          <dt>Ownership and borrowing</dt><dd>Rust's compile-time memory-management model: each value has one owner, freed deterministically at scope exit, with no runtime garbage collector; see §6.3.</dd>
+          <dt>Parameterized query</dt><dd>A query where data values are passed separately from query syntax, preventing SQL injection.</dd>
+          <dt>Parse tree</dt><dd>The full derivation of an expression via a language's grammar rules.</dd>
+          <dt>Pure function</dt><dd>A function with no side effects that always returns the same output for the same input.</dd>
+          <dt>Recursive descent parsing</dt><dd>A top-down parsing technique mapping each grammar rule to a function.</dd>
+          <dt>Referential transparency / black-box functional design</dt><dd>A function whose external contract is pure even though its internal implementation may use ordinary mutation; see §4.6.</dd>
+          <dt>Shift-reduce parsing</dt><dd>A bottom-up parsing technique using a stack and state machine.</dd>
+          <dt>Statelessness</dt><dd>The REST constraint that a request be handled using only its own contents plus persisted state, with nothing held over in server memory between requests; see §4.7.</dd>
+          <dt>Von Neumann architecture</dt><dd>The classical CPU/RAM/stack model of deterministic, sequential computation.</dd>
+        </dl>
+      </section>
+
+    </article>
+
+    <footer class="colophon">
+      <p>Reorganized from CSCI 330 course notes (Fall 2024). A plain-text companion of this document lives at <code>docs/programming-languages-reference.md</code> in the course repository.</p>
+    </footer>
+  </main>
+</div>
+</body>
+</html>
