@@ -124,11 +124,29 @@ macos-latest**. The matrix is not incidental — the claim is that one manifest
 resolves correctly on three operating systems, so three real runners are the
 evidence for it. Each prints the accelerator it resolved to before testing.
 
+Every push that touches `ml/` therefore checks two things on three operating
+systems: **that the environment installs**, and **that a small model actually
+trains and generalises** on whatever backend that machine has.
+
 Reliability choices, and their reasons:
 
 - **`locked: true`** — CI fails if `pixi.lock` does not match `pixi.toml`,
   instead of quietly re-solving. The run therefore reproduces the committed
   lock rather than whatever conda-forge happens to hold today.
+- **`cache: false`** — deliberately. Caching would restore a previously-good
+  environment and skip the install on any push that does not change the lock,
+  but installing from the lock is one of the things being tested, and it is
+  what every student does on a fresh clone. A cold install costs 13-41s per OS.
+- **The install is asserted, not assumed.** `test_installed_build_matches_the_lock`
+  reads `conda-meta/` in the live environment and compares the artifact actually
+  installed against the one the lock names for this platform. A stale cache,
+  a partial install or a stray `pip install` fails the build.
+- **The model must generalise, not just converge.**
+  `test_generalizes_on_the_selected_device` scores the trained model on data it
+  never saw, on CUDA, Metal or CPU as available, and
+  `test_predicts_sine_at_known_points` checks it against values known by hand.
+  A backend whose arithmetic is silently wrong fails these even though its loss
+  curve looked healthy.
 - **`pixi-version: v0.76.2`** — pinned to the version that produced the lock, so
   a pixi release cannot change the answer underneath the course. Upgrading is a
   deliberate one-line edit.

@@ -8,12 +8,23 @@ is the only way to see the per-platform drift without borrowing three laptops.
 from __future__ import annotations
 
 import os
+import platform
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
 
 LOCK_PATH = Path(__file__).resolve().parent.parent / "pixi.lock"
+
+# How Python names a machine -> how conda names the same machine.
+_SUBDIRS = {
+    ("Darwin", "arm64"): "osx-arm64",
+    ("Darwin", "x86_64"): "osx-64",
+    ("Linux", "x86_64"): "linux-64",
+    ("Linux", "aarch64"): "linux-aarch64",
+    ("Windows", "AMD64"): "win-64",
+}
 
 
 @dataclass(frozen=True)
@@ -45,6 +56,29 @@ def _subdirs(lock: dict) -> dict[str, tuple[str, tuple[str, ...]]]:
             tuple(entry.get("virtual-packages", [])),
         )
     return table
+
+
+def current_subdir() -> str:
+    """The conda subdir for the machine running this code."""
+    key = (platform.system(), platform.machine())
+    if key not in _SUBDIRS:
+        raise RuntimeError(f"no known conda subdir for {key}")
+    return _SUBDIRS[key]
+
+
+def installed_build(package: str = "pytorch") -> tuple[str, str] | None:
+    """Read (version, build) of `package` from the *live* environment.
+
+    conda records every installed artifact under `conda-meta/`, named exactly as
+    the file it came from. Comparing that against the lock is what proves the
+    environment on this machine is the one the lock describes, rather than
+    something a stale cache or a manual `pip install` left behind.
+    """
+    for meta in sorted(Path(sys.prefix, "conda-meta").glob(f"{package}-*.json")):
+        parsed = _parse_filename(meta.name.replace(".json", ".conda"))
+        if parsed and parsed[0] == package:
+            return parsed[1], parsed[2]
+    return None
 
 
 def _accelerator(build: str, subdir: str) -> str:
@@ -124,6 +158,11 @@ def report(package: str = "pytorch") -> str:
     cuda = sorted({v for r in rows for v in r.virtual_packages if v.startswith("__cuda")})
     if cuda:
         lines += ["", f"CUDA builds were selected by the virtual package: {', '.join(cuda)}"]
+
+    installed = installed_build(package)
+    if installed is not None:
+        version, build = installed
+        lines += ["", f"installed here ({current_subdir()}): {package} {version} {build}"]
     return "\n".join(lines)
 
 

@@ -8,7 +8,7 @@ Apple Silicon laptop and a CI runner is what `device.select()` returned.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import torch
 from torch import nn
@@ -46,12 +46,19 @@ def build_model(seed: int = 0) -> nn.Module:
 
 @dataclass(frozen=True)
 class Result:
-    """What a training run produced."""
+    """What a training run produced.
+
+    `holdout_loss` is the one that matters across platforms: it is measured on
+    data the model never saw, so it says the backend computed a *correct*
+    answer, not merely a converging one.
+    """
 
     device: str
     steps: int
     first_loss: float
     final_loss: float
+    holdout_loss: float
+    model: nn.Module = field(repr=False)
 
     @property
     def improvement(self) -> float:
@@ -77,7 +84,19 @@ def train(steps: int = 400, seed: int = 0, device: str | None = None) -> Result:
         if first_loss is None:
             first_loss = loss.item()
 
-    return Result(target, steps, float(first_loss), float(loss.item()))
+    # Held-out data, drawn from a different seed so none of it was trained on.
+    with torch.no_grad():
+        holdout_x, holdout_y = make_data(samples=512, seed=seed + 1000, device=target)
+        holdout = criterion(model(holdout_x), holdout_y).item()
+
+    return Result(
+        device=target,
+        steps=steps,
+        first_loss=float(first_loss),
+        final_loss=float(loss.item()),
+        holdout_loss=float(holdout),
+        model=model,
+    )
 
 
 def main() -> None:
@@ -87,6 +106,7 @@ def main() -> None:
     print(f"  steps      : {result.steps}")
     print(f"  first loss : {result.first_loss:.6f}")
     print(f"  final loss : {result.final_loss:.6f}")
+    print(f"  holdout    : {result.holdout_loss:.6f}  (never trained on)")
     print(f"  improvement: {result.improvement:.1f}x")
 
 

@@ -2,7 +2,12 @@
 manifest differently per platform. If pixi ever stopped doing that, the point of
 this directory would be gone, so it is worth failing the build over."""
 
-from mldemo.resolved import _accelerator, resolutions
+from mldemo.resolved import (
+    _accelerator,
+    current_subdir,
+    installed_build,
+    resolutions,
+)
 
 EXPECTED_PLATFORMS = {"linux-64", "osx-arm64", "win-64"}
 
@@ -42,3 +47,35 @@ def test_macos_cpu_build_is_reported_as_metal():
     assert _accelerator("cpu_generic_py313_h0", "osx-arm64") == "Metal (MPS)"
     assert _accelerator("cpu_mkl_py312_h0", "linux-64") == "CPU"
     assert _accelerator("cuda129_mkl_py312_h0", "linux-64") == "CUDA 12.9"
+
+
+def test_this_platform_is_one_we_declared():
+    assert current_subdir() in EXPECTED_PLATFORMS
+
+
+def test_installed_build_matches_the_lock():
+    """The environment actually installed here must be the one the lock names.
+
+    This is the install check: it runs on every platform in CI and fails if a
+    stale cache, a partial install or a stray `pip install` left the running
+    environment different from the committed lock file.
+    """
+    installed = installed_build()
+    assert installed is not None, "pytorch is not installed in this environment"
+
+    expected = [
+        r
+        for r in resolutions()
+        if r.environment == "default" and r.platform == current_subdir()
+    ]
+    assert len(expected) == 1, f"expected one locked pytorch, got {expected}"
+    assert installed == (expected[0].version, expected[0].build)
+
+
+def test_installed_build_is_not_a_cuda_build_without_a_gpu():
+    """The default environment must never install a CUDA build."""
+    version, build = installed_build()
+    assert not build.startswith("cuda"), f"default environment installed {build}"
+    assert version == next(
+        r.version for r in resolutions() if r.platform == current_subdir()
+    )

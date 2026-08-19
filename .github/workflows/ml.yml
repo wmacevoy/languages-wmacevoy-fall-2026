@@ -54,7 +54,13 @@ jobs:
           # Pinned to the version that produced pixi.lock. Upgrading is then a
           # deliberate one-line change rather than something that happens to us.
           pixi-version: v0.76.2
-          cache: true
+          # Deliberately off. Caching would restore a previously-good environment
+          # and skip the install entirely on any push that does not touch the
+          # lock -- but installing from the lock is one of the things this
+          # workflow is supposed to check, and it is what every student does on
+          # a fresh clone. A cold install costs 13-41s per OS, which is cheaper
+          # than not testing it.
+          cache: false
 
       # The payoff: this line differs per operating system, from one manifest.
       - name: Report the accelerator this runner resolved to
@@ -63,5 +69,14 @@ jobs:
       - name: Show what every platform resolved to
         run: pixi run -q resolved
 
+      # Exercises the accelerator path end to end. On the macOS runner this
+      # really does dispatch to Metal; elsewhere it reports that there is
+      # nothing to compare against, and either outcome is informative.
+      - name: Benchmark the accelerator against the CPU
+        run: pixi run -q bench
+
+      # 22 tests, including the two that matter across platforms: that the
+      # installed artifact matches the lock, and that the model generalises on
+      # whatever backend this runner has.
       - name: Test
         run: pixi run -q test
