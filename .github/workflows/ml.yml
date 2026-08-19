@@ -1,0 +1,67 @@
+name: ml
+
+# Only pushes that touch ml/ (or this file) are relevant.
+on:
+  push:
+    paths:
+      - 'ml/**'
+      - '.github/workflows/ml.yml'
+  pull_request:
+    paths:
+      - 'ml/**'
+      - '.github/workflows/ml.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: ml
+
+jobs:
+  test:
+    # The claim under test is that one manifest resolves correctly on three
+    # different operating systems, so the matrix *is* the evidence.
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      # Never cancel the other OSes: when this breaks, the interesting question
+      # is always "which platforms broke", and fail-fast hides that.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pixi
+        uses: prefix-dev/setup-pixi@v0.10.1
+        with:
+          manifest-path: ml/pixi.toml
+          # Only the default environment: the cuda one requires an NVIDIA GPU,
+          # which no hosted runner has. That it *locks* correctly is asserted by
+          # the test suite, which reads pixi.lock directly.
+          environments: default
+          # Fail if pixi.lock does not match pixi.toml, rather than silently
+          # re-solving. This is what makes the run reproduce the committed lock.
+          locked: true
+          # Pinned to the version that produced pixi.lock. Upgrading is then a
+          # deliberate one-line change rather than something that happens to us.
+          pixi-version: v0.76.2
+          cache: true
+
+      # The payoff: this line differs per operating system, from one manifest.
+      - name: Report the accelerator this runner resolved to
+        run: pixi run -q device
+
+      - name: Show what every platform resolved to
+        run: pixi run -q resolved
+
+      - name: Test
+        run: pixi run -q test

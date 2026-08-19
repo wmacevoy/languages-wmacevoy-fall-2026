@@ -1,0 +1,59 @@
+[workspace]
+name = "ml"
+version = "0.1.0"
+description = "A GPU-adaptive PyTorch environment: one manifest, one lock, a different resolution per platform."
+authors = ["Warren MacEvoy <wmacevoy@gmail.com>"]
+channels = ["conda-forge"]
+# One manifest, three platforms. pixi.lock records a *separate* resolution for
+# each of them -- that per-platform drift is the entire point of this demo, and
+# it is the thing a single container image cannot express.
+platforms = ["osx-arm64", "linux-64", "win-64"]
+
+[dependencies]
+python = ">=3.12,<3.14"
+numpy = ">=2,<3"
+pyyaml = ">=6"
+
+# --- accelerator features ---------------------------------------------------
+# Portable build: plain CPU on Linux and Windows. On macOS this same build also
+# exposes Metal (MPS) -- Apple GPU support is compiled into every osx-arm64
+# build rather than shipped as a separate variant, so the drift between
+# platforms is real but not uniform.
+[feature.cpu.dependencies]
+pytorch = { version = ">=2.13,<3", build = "cpu*" }
+
+# NVIDIA build: only meaningful where CUDA exists, so the feature narrows the
+# platform list to the two that have it and attaches a CUDA 12 requirement to
+# each. That requirement is what lets the solver choose cuda builds even though
+# the machine doing the solving (a Mac) has no NVIDIA GPU at all: it enters the
+# solve as a `__cuda=12` virtual package, which the lock file then records.
+[feature.cuda]
+platforms = ["linux-64", "win-64"]
+
+# pixi warns that this table is deprecated and suggests writing the requirement
+# inline as `platforms = [{ platform = "linux-64", cuda = "12" }]`. That
+# suggestion does not work on a feature: `pixi info` accepts it, but `pixi lock`
+# fails with "expected a string, found table" -- verified on both 0.76.2 and
+# 0.77.0. And the table is not optional: without a `__cuda` virtual package the
+# solve fails outright with "pytorch 2.13.0 would require __cuda *, for which no
+# candidates were found". So this deprecated spelling is the only one that
+# works. Revisit when the replacement actually parses.
+[feature.cuda.system-requirements]
+cuda = "12"
+
+[feature.cuda.dependencies]
+pytorch = { version = ">=2.13,<3", build = "cuda*" }
+
+[feature.dev.dependencies]
+pytest = ">=8,<10"
+
+[environments]
+default = ["cpu", "dev"]
+cuda = ["cuda", "dev"]
+
+[tasks]
+device = { cmd = "python -m mldemo.device", description = "Report the accelerator this machine resolved to" }
+resolved = { cmd = "python -m mldemo.resolved", description = "Show what every platform resolved to, read from pixi.lock" }
+train = { cmd = "python -m mldemo.train", description = "Train a small model on the best available device" }
+bench = { cmd = "python -m mldemo.bench", description = "Time a matmul on the accelerator against the CPU" }
+test = { cmd = "pytest -q", description = "Run the test suite" }
