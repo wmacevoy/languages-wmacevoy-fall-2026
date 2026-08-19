@@ -58,8 +58,8 @@ jobs:
           # and skip the install entirely on any push that does not touch the
           # lock -- but installing from the lock is one of the things this
           # workflow is supposed to check, and it is what every student does on
-          # a fresh clone. A cold install costs 13-41s per OS, which is cheaper
-          # than not testing it.
+          # a fresh clone. A cold install has measured 7-45s per OS, which is
+          # cheaper than not testing it.
           cache: false
 
       # The payoff: this line differs per operating system, from one manifest.

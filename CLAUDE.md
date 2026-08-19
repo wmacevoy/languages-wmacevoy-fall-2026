@@ -4,7 +4,32 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-Course resource repository for CSCI 330 — Programming Languages (Fall 2026, Dr. Warren MacEvoy). There is no application code, build system, package manager, linter, or test suite — the repository's content *is* the deliverable: a course reference document published as a static site via GitHub Pages. There are no commands to build, lint, or test.
+Course resource repository for CSCI 330 — Programming Languages (Fall 2026, Dr. Warren MacEvoy). It holds two kinds of material, with different rules:
+
+1. **The reference document** (`docs/`) — the original deliverable: a course reference published as a static site via GitHub Pages. No build system; the content *is* the artifact. See "Content architecture" below.
+2. **Runnable demos** (`rust/`, `ml/`) — small, self-contained projects, each with its own build, test suite and GitHub Actions workflow. Each has a README, and `ml/` has an `AGENTS.md` you should read before editing it.
+
+The two demos are a deliberate matched pair on the same question — how to make an environment reproducible — reaching opposite conclusions. Do not "harmonize" them:
+
+| | `rust/` | `ml/` |
+| --- | --- | --- |
+| tool | Docker | pixi |
+| reproduces | one machine, byte-identical everywhere | one *decision procedure*, run per platform |
+| right when | the build is hermetic and hardware-independent | dependencies must differ by hardware, or the toolchain is too big / too GUI-bound to containerize |
+| CI | `.github/workflows/rust.yml` | `.github/workflows/ml.yml` (3-OS matrix) |
+
+## Commands
+
+There is nothing to build or test for `docs/`. For the demos:
+
+```sh
+cd rust && ./build.sh      # test, then cross-compile for 6 targets -> rust/dist
+cd rust && ./run.sh        # run the artifact for this architecture
+cd ml   && pixi run test   # 22 tests
+cd ml   && pixi run resolved   # what each platform resolved to
+```
+
+Both demos gate their own artifacts on their tests, and both CI workflows are path-filtered, so a change under `docs/` triggers neither.
 
 ## Content architecture
 
