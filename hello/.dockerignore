@@ -1,0 +1,4 @@
+# The image builds no project files in (build.sh bind-mounts them instead),
+# so keep the build context nearly empty.
+*
+!Dockerfile

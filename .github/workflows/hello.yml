@@ -1,0 +1,111 @@
+name: hello
+
+# Only pushes that touch hello/ (or this file) are relevant, so everything else
+# in the repo -- the docs site, the other two demos -- never triggers a build.
+on:
+  push:
+    paths:
+      - 'hello/**'
+      - '.github/workflows/hello.yml'
+  pull_request:
+    paths:
+      - 'hello/**'
+      - '.github/workflows/hello.yml'
+  workflow_dispatch:
+
+# Read-only: nothing here writes to the repo, publishes a package or comments.
+permissions:
+  contents: read
+
+# A second push to the same branch makes the first run's answer irrelevant.
+concurrency:
+  group: hello-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: hello
+
+jobs:
+  build:
+    # Three operating systems x two architectures, each on a runner whose CPU
+    # really is that architecture -- so every leg *runs* its own binary rather
+    # than only linking it. That is the claim a cross-compiler cannot make.
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      # Never cancel the other legs: when this breaks, the interesting question
+      # is always "which platforms broke", and fail-fast hides that.
+      fail-fast: false
+      matrix:
+        include:
+          - { label: linux-x86_64,   runner: ubuntu-24.04,     toolchain: GCC }
+          - { label: linux-arm64,    runner: ubuntu-24.04-arm, toolchain: GCC }
+          - { label: macos-x86_64,   runner: macos-15-intel,   toolchain: Clang }
+          - { label: macos-arm64,    runner: macos-15,         toolchain: Clang }
+          - { label: windows-x86_64, runner: windows-2025,     toolchain: MSVC }
+          - { label: windows-arm64,  runner: windows-11-arm,   toolchain: MSVC }
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Every step below is a bare cmake invocation with no shell syntax, so
+      # these run identically under bash and under PowerShell. That is why this
+      # workflow never sets `shell:` -- there is nothing per-platform to set.
+      - name: Report the toolchain (${{ matrix.toolchain }})
+        run: cmake --version
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      # --config matters for the multi-config generators (Visual Studio) and is
+      # ignored by the single-config ones (Makefiles, Ninja). One line, six
+      # platforms.
+      - name: Build
+        run: cmake --build build --config Release
+
+      # The gate: no artifact is staged from a binary that failed its own test.
+      - name: Test
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+      # `cmake --install` rather than copying a path by hand -- it knows where
+      # each generator puts the binary (build/hello vs build/Release/hello.exe)
+      # and what the executable suffix is.
+      - name: Stage the artifact
+        run: cmake --install build --config Release --prefix dist
+
+      - name: Publish the artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: hello-${{ matrix.label }}-${{ github.sha }}
+          # Paths in upload-artifact are relative to the workspace, not to the
+          # `working-directory` default above.
+          path: hello/dist/bin/
+          if-no-files-found: error
+          retention-days: 14
+
+  container:
+    # The other half of the question. The matrix above answers "does this source
+    # build everywhere"; this answers "can one machine reproduce a build exactly"
+    # -- pinned image, pinned compiler, no dependence on whatever the runner
+    # happens to have installed this month.
+    name: container
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      # Deliberately the same command a developer runs locally -- build.sh
+      # builds the image and does everything else inside it, so there is no
+      # separate CI recipe that can drift away from the local one.
+      - name: Build in the container
+        run: ./build.sh
+
+      - name: Publish the artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: hello-container-${{ github.sha }}
+          path: hello/dist/
+          if-no-files-found: error
+          retention-days: 14
