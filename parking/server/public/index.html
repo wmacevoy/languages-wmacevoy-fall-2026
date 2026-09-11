@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Parking Occupancy Demo</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="backdrop"></div>
+    <div class="language-picker">
+      <label for="language-select" data-i18n="languageLabel">Language</label>
+      <select id="language-select" aria-label="Language">
+        <option value="en">English</option>
+        <option value="zh">中文</option>
+        <option value="es">Español</option>
+        <option value="hi">हिन्दी</option>
+        <option value="bn">বাংলা</option>
+        <option value="pt">Português</option>
+        <option value="ru">Русский</option>
+        <option value="ja">日本語</option>
+      </select>
+    </div>
+    <main class="page">
+      <header class="hero">
+        <div>
+          <p class="eyebrow" data-i18n="eyebrowCityParking">City Parking</p>
+          <h1 data-i18n="heroTitle">Live Parking Availability</h1>
+          <p class="subtitle" data-i18n="heroSubtitle">
+            Customers see open lots and live availability. Admins open/close lots.
+            Sensors update occupancy.
+          </p>
+        </div>
+        <div class="meta">
+          <div class="meta-card">
+            <span class="meta-label" data-i18n="lastRefresh">Last Refresh</span>
+            <span id="last-updated">--</span>
+          </div>
+          <button id="refresh" class="ghost" data-i18n="refreshNow">
+            Refresh Now
+          </button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h2 data-i18n="customerViewTitle">Customer View</h2>
+            <p data-i18n="customerViewSubtitle">Open lots with available spaces.</p>
+          </div>
+          <div id="lot-list"></div>
+        </div>
+
+        <div class="panel language-panel">
+          <div class="panel-header">
+            <h2 data-i18n="languagePanelTitle">First Languages Over 100M</h2>
+            <p data-i18n="languagePanelSubtitle">
+              Approximate native-speaker populations.
+            </p>
+          </div>
+          <ul class="language-list">
+            <li>中文（普通话）</li>
+            <li>Español</li>
+            <li>English</li>
+            <li>हिन्दी</li>
+            <li>বাংলা</li>
+            <li>Português</li>
+            <li>Русский</li>
+            <li>日本語</li>
+          </ul>
+        </div>
+
+        <div class="panel" id="auth-panel">
+          <div class="panel-header">
+            <h2 data-i18n="loginTitle">Login</h2>
+            <p data-i18n="loginSubtitle">Admins and sensors sign in to manage lots.</p>
+          </div>
+          <form id="login-form" class="stack">
+            <label>
+              <span data-i18n="usernameLabel">Username</span>
+              <input id="login-username" type="text" autocomplete="username" />
+            </label>
+            <label>
+              <span data-i18n="passwordLabel">Password</span>
+              <input
+                id="login-password"
+                type="password"
+                autocomplete="current-password"
+              />
+            </label>
+            <button type="submit" class="primary" data-i18n="signIn">
+              Sign In
+            </button>
+          </form>
+          <div class="auth-meta">
+            <div>
+              <p class="status-label" data-i18n="currentUserLabel">Current User</p>
+              <p id="current-user" class="status">Guest</p>
+            </div>
+            <button id="logout" class="ghost" type="button" hidden data-i18n="logout">
+              Logout
+            </button>
+          </div>
+          <p id="login-status" class="status"></p>
+        </div>
+
+        <div class="panel" id="admin-panel" hidden>
+          <div class="panel-header">
+            <h2 data-i18n="adminConsoleTitle">Admin Console</h2>
+            <p data-i18n="adminConsoleSubtitle">Open or close parking areas.</p>
+          </div>
+          <form id="admin-form" class="stack">
+            <label>
+              <span data-i18n="lotLabel">Lot</span>
+              <select id="admin-lot"></select>
+            </label>
+            <div class="button-row">
+              <button
+                type="button"
+                data-action="open"
+                class="primary"
+                data-i18n="openLot"
+              >
+                Open Lot
+              </button>
+              <button
+                type="button"
+                data-action="close"
+                class="danger"
+                data-i18n="closeLot"
+              >
+                Close Lot
+              </button>
+            </div>
+          </form>
+          <p id="admin-status" class="status"></p>
+        </div>
+
+        <div class="panel" id="sensor-panel" hidden>
+          <div class="panel-header">
+            <h2 data-i18n="sensorUpdateTitle">Sensor Update</h2>
+            <p data-i18n="sensorUpdateSubtitle">Push occupancy counts for a lot.</p>
+          </div>
+          <form id="sensor-form" class="stack">
+            <label>
+              <span data-i18n="lotLabel">Lot</span>
+              <select id="sensor-lot"></select>
+            </label>
+            <label>
+              <span data-i18n="occupancyLabel">Occupancy</span>
+              <input id="sensor-occupancy" type="number" min="0" value="0" />
+            </label>
+            <button type="submit" class="primary" data-i18n="sendUpdate">
+              Send Update
+            </button>
+          </form>
+          <p id="sensor-status" class="status"></p>
+        </div>
+
+        <div class="panel" id="users-panel" hidden>
+          <div class="panel-header">
+            <h2 data-i18n="userManagementTitle">User Management</h2>
+            <p data-i18n="userManagementSubtitle">Admins create or remove users.</p>
+          </div>
+          <form id="user-form" class="stack">
+            <label>
+              <span data-i18n="usernameLabel">Username</span>
+              <input
+                id="user-username"
+                type="text"
+                placeholder="sensor/2"
+                data-i18n-placeholder="userNamePlaceholder"
+              />
+            </label>
+            <label>
+              <span data-i18n="passwordLabel">Password</span>
+              <input id="user-password" type="password" />
+            </label>
+            <label>
+              <span data-i18n="roleLabel">Role</span>
+              <select id="user-role">
+                <option value="none" data-i18n="roleNone">None</option>
+                <option value="sensor" data-i18n="roleSensor">Sensor</option>
+                <option value="admin" data-i18n="roleAdmin">Admin</option>
+              </select>
+            </label>
+            <label id="user-lot-row">
+              <span data-i18n="sensorLotLabel">Sensor Lot</span>
+              <select id="user-lot"></select>
+            </label>
+            <button type="submit" class="primary" data-i18n="createUser">
+              Create User
+            </button>
+          </form>
+          <div class="user-list" id="user-list"></div>
+          <p id="user-status" class="status"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
