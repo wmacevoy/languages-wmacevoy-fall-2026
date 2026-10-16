@@ -1,3 +1,9 @@
+//! Check is_json_number against every case in ../cases.txt.
+//!
+//! include_str! copies cases.txt into the test binary when it is compiled,
+//! not when it runs. That is still safe: cargo records the file as an input,
+//! so `cargo test` recompiles whenever cases.txt changes. See ../../time.md.
+
 use json_number::is_json_number;
 
 const CASES: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/../cases.txt"));

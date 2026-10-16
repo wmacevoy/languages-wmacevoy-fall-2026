@@ -1,3 +1,8 @@
+// Check isJsonNumber against every case in ../cases.txt.
+//
+// cases.txt is read when this module loads, which is every time the test
+// runs, so a new case needs no other change. Each case is its own test.
+
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";

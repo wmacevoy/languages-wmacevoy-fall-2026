@@ -4,10 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repository is
 
-Course resource repository for CSCI 330 — Programming Languages (Fall 2026, Dr. Warren MacEvoy). It holds two kinds of material, with different rules:
+Course resource repository for CSCI 330 — Programming Languages (Fall 2026, Dr. Warren MacEvoy). It holds three kinds of material, with different rules:
 
 1. **The reference document** (`docs/`) — the original deliverable: a course reference published as a static site via GitHub Pages. No build system; the content *is* the artifact. See "Content architecture" below.
 2. **Runnable demos** (`rust/`, `ml/`, `hello/`) — small, self-contained projects, each with its own build, test suite and GitHub Actions workflow. Each has a README, and `ml/` has an `AGENTS.md` you should read before editing it.
+3. **The `regex/` demo** — one JSON-number regex in Python, JavaScript, Rust and C++ (GoogleTest), all tested against the single shared `regex/cases.txt`. It is about language semantics (`\d`, `$`, the JS `g` flag), not reproducibility, so it is not part of the three-demo set below. Keep the four implementations reading the shared file rather than copying cases into each language, and read `regex/time.md` before changing how any harness reads `cases.txt` or lists its tests.
 
 The three demos are a deliberate set on the same question — how to make an environment reproducible — reaching *different* conclusions. Do not "harmonize" them:
 
@@ -36,6 +37,7 @@ cd ml    && pixi run test  # 22 tests
 cd ml    && pixi run resolved  # what each platform resolved to
 cd hello && ./build.sh     # configure, build, test in the container -> hello/dist
 cd hello && ./run.sh       # run the artifact for the container's architecture
+cd regex && ./test.sh      # all four languages against regex/cases.txt
 ```
 
 `hello/` also builds without Docker, with the same three commands its CI runs:

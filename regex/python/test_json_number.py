@@ -1,3 +1,9 @@
+"""Check is_json_number against every case in ../cases.txt.
+
+cases.txt is read when the test runs, so a new case needs no other change.
+Each case is a subTest, so one failure does not hide the others.
+"""
+
 import pathlib
 import re
 import unittest

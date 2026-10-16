@@ -59,7 +59,9 @@ jobs:
 
       - name: Test
         working-directory: regex/cpp
-        run: ctest --test-dir build --build-config Release --output-on-failure
+        # --verbose: ctest sees one test (the whole GoogleTest binary, see
+        # regex/time.md), so print its output to show every case in the log.
+        run: ctest --test-dir build --build-config Release --output-on-failure --verbose
 
   others:
     # Python, JavaScript and Rust against the same cases.txt, so a case that

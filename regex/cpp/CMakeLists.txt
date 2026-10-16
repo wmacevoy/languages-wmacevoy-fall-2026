@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.16)
 
 project(json_number LANGUAGES CXX)
 
@@ -24,7 +24,8 @@ target_compile_definitions(json_number_test PRIVATE
     CASES_FILE="${CMAKE_CURRENT_SOURCE_DIR}/../cases.txt")
 
 enable_testing()
-include(GoogleTest)
-# The cases are read from cases.txt at run time, so list them at test time too:
-# discovering at build time would miss a case added without a rebuild.
-gtest_discover_tests(json_number_test DISCOVERY_MODE PRE_TEST)
+# One ctest entry that runs the whole GoogleTest binary, which reads cases.txt
+# fresh every run. gtest_discover_tests would give one ctest entry per case,
+# but it lists them only when the binary changes -- in every DISCOVERY_MODE --
+# so a case added to cases.txt would silently go unrun. See ../time.md.
+add_test(NAME json_number_test COMMAND json_number_test)

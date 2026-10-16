@@ -1,3 +1,9 @@
+// Check is_json_number against every case in ../cases.txt with GoogleTest.
+//
+// CASES_FILE is the absolute path to cases.txt, set by CMakeLists.txt. The
+// file is read when the binary runs, so a new case needs no rebuild. Each
+// case becomes one value-parameterized test, named after its line number.
+
 #include "json_number.hpp"
 
 #include <gtest/gtest.h>
