@@ -1,0 +1,123 @@
+# The shared test set. Every implementation reads this one file, so they
+# cannot drift apart: a case added here is a case all four must agree on.
+#
+# Format, one case per line:
+#   + <input>   must match
+#   - <input>   must not match
+# The input is everything after "+ " or "- ", taken literally, except:
+#   \\    a backslash
+#   \xHH  the byte/character with hex code HH (spaces, tabs, newlines, ...)
+# A bare "-" with nothing after it is the empty string.
+# Blank lines and lines starting with "#" are ignored.
+
+# --- integers ---
++ 0
++ -0
++ 1
++ -1
++ 9
++ 10
++ 123
++ -123
++ 123456789012345678901234567890
+
+# --- fractions ---
++ 0.0
++ 0.5
++ -0.5
++ 1.25
++ 3.14159
++ 0.000001
++ 10.010
+
+# --- exponents ---
++ 1e10
++ 1E10
++ 1e+10
++ 1e-10
++ 1E+0
++ 0e0
++ -0E-0
++ 1.5e3
++ -1.5E-3
++ 1e999
+# leading zeros are forbidden in the integer part, but allowed in the exponent
++ 1e007
++ 10.01e01
+
+# --- empty and lone signs ---
+-
+- -
+- +
+- --1
+- -+1
+
+# --- JSON has no leading "+" ---
+- +1
+- +0
+
+# --- leading zeros ---
+- 00
+- 01
+- -01
+- 007
+
+# --- a "." needs digits on both sides ---
+- 1.
+- .5
+- -.5
+- 1.e5
+- 1.2.3
+
+# --- an exponent needs digits ---
+- 1e
+- 1E
+- 1e+
+- 1e-
+- e5
+- E5
+- 1.5e
+- 1e5e5
+- 1e5.0
+- 1E+-5
+
+# --- other languages' number syntax, not JSON's ---
+- 0x1F
+- 0b101
+- 0o17
+- 1_000
+- 1,000
+- 1.0f
+- 10L
+- NaN
+- nan
+- Infinity
+- -Infinity
+- inf
+
+# --- whitespace is the JSON parser's business, not the number's ---
+- \x201
+- 1\x20
+- \x091
+- 1\x09
+# Python's "$" (and re.match + "$") also matches just before a trailing
+# newline -- an anchored-with-$ pattern wrongly accepts this one.
+- 1\x0a
+- \x0a1
+- 1\x0d\x0a
+
+# --- non-ASCII digits: "\d" matches these in Python and Rust (Unicode by
+# default) but not in JavaScript or C++. "[0-9]" means the same everywhere.
+# The first digit is [1-9] either way, so only the later ones catch a "\d".
+- ٣
+- ١٢٣
+- １
+- 1٢
+- 1.٢
+- 1e٢
+
+# --- junk ---
+- abc
+- 1a
+- a1
+- \\1

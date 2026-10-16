@@ -1,0 +1,91 @@
+name: regex
+
+# Only pushes that touch regex/ (or this file) are relevant.
+on:
+  push:
+    paths:
+      - 'regex/**'
+      - '.github/workflows/regex.yml'
+  pull_request:
+    paths:
+      - 'regex/**'
+      - '.github/workflows/regex.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regex-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: regex
+
+jobs:
+  cpp:
+    # One leg per operating system, each with its native compiler. std::regex
+    # is implemented separately by libstdc++, libc++ and the MSVC STL, so this
+    # checks three regex engines against cases.txt, not just three compilers.
+    # Windows also checks out cases.txt with "\r\n" line endings, which the
+    # loader has to strip.
+    name: cpp-${{ matrix.label }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: linux,   runner: ubuntu-24.04, toolchain: GCC }
+          - { label: macos,   runner: macos-15,     toolchain: Clang }
+          - { label: windows, runner: windows-2025, toolchain: MSVC }
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Bare cmake commands with no shell syntax, so they run the same under
+      # bash and PowerShell.
+      - name: Report the toolchain (${{ matrix.toolchain }})
+        run: cmake --version
+
+      - name: Configure
+        working-directory: regex/cpp
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        working-directory: regex/cpp
+        run: cmake --build build --config Release
+
+      - name: Test
+        working-directory: regex/cpp
+        run: ctest --test-dir build --build-config Release --output-on-failure
+
+  others:
+    # Python, JavaScript and Rust against the same cases.txt, so a case that
+    # makes the C++ legs fail is also checked against the other three.
+    name: python-javascript-rust
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Python
+        working-directory: regex/python
+        run: python -m unittest -v
+
+      - name: JavaScript
+        working-directory: regex/javascript
+        run: node --test json_number.test.mjs
+
+      - name: Rust
+        working-directory: regex/rust
+        run: cargo test
