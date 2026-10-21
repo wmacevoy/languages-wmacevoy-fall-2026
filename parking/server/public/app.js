@@ -1,3 +1,12 @@
+// The checks every client and the server share; the server serves this file at /validation.js.
+import {
+  isValidLogin,
+  isValidNewUser,
+  isValidOccupancy,
+  loginError,
+  newUserError,
+} from './validation.js';
+
 const lotList = document.getElementById('lot-list');
 const lastUpdated = document.getElementById('last-updated');
 const refreshBtn = document.getElementById('refresh');
@@ -93,6 +102,14 @@ const translations = {
     errLoginFailed: 'Login failed',
     errCreateFailed: 'Create failed',
     errDeleteFailed: 'Delete failed',
+    errUsername: 'Username: 1–32 lowercase letters, digits, ".", "_" or "-", with at most one "/" (like sensor/north).',
+    errPassword: 'Password: 8–72 characters (A–Z, a–z, 0–9, symbols or spaces), not starting or ending with a space.',
+    errPasswordRequired: 'Password required.',
+    errRole: 'Role must be none, sensor or admin.',
+    errSensorLot: 'Sensor users require a lot.',
+    errLotId: 'Invalid lot id.',
+    errUserId: 'Invalid user id.',
+    errOccupancy: 'Occupancy must be a whole number, 0 or more.',
     lotNowState: '{name} is now {state}.',
     stateOpen: 'open',
     stateClosed: 'closed',
@@ -160,6 +177,14 @@ const translations = {
     errLoginFailed: '登录失败',
     errCreateFailed: '创建失败',
     errDeleteFailed: '删除失败',
+    errUsername: '用户名：1–32 个小写字母、数字、"."、"_" 或 "-"，最多一个 "/"（如 sensor/north）。',
+    errPassword: '密码：8–72 个字符（A–Z、a–z、0–9、符号或空格），不能以空格开头或结尾。',
+    errPasswordRequired: '请输入密码。',
+    errRole: '角色必须是 none、sensor 或 admin。',
+    errSensorLot: '传感器用户必须指定停车场。',
+    errLotId: '无效的停车场 ID。',
+    errUserId: '无效的用户 ID。',
+    errOccupancy: '占用量必须是 0 或更大的整数。',
     lotNowState: '{name} 现已{state}。',
     stateOpen: '开放',
     stateClosed: '关闭',
@@ -228,6 +253,14 @@ const translations = {
     errLoginFailed: 'Falló el inicio de sesión',
     errCreateFailed: 'Falló la creación',
     errDeleteFailed: 'Falló la eliminación',
+    errUsername: 'Usuario: 1–32 letras minúsculas, dígitos, ".", "_" o "-", con una "/" como máximo (como sensor/north).',
+    errPassword: 'Contraseña: 8–72 caracteres (A–Z, a–z, 0–9, símbolos o espacios), sin espacio al principio ni al final.',
+    errPasswordRequired: 'Se requiere la contraseña.',
+    errRole: 'El rol debe ser none, sensor o admin.',
+    errSensorLot: 'Los usuarios sensor requieren un lote.',
+    errLotId: 'Id de lote no válido.',
+    errUserId: 'Id de usuario no válido.',
+    errOccupancy: 'La ocupación debe ser un número entero, 0 o mayor.',
     lotNowState: '{name} ahora está {state}.',
     stateOpen: 'abierto',
     stateClosed: 'cerrado',
@@ -295,6 +328,14 @@ const translations = {
     errLoginFailed: 'लॉगिन विफल रहा',
     errCreateFailed: 'बनाना विफल रहा',
     errDeleteFailed: 'हटाना विफल रहा',
+    errUsername: 'यूज़रनेम: 1–32 छोटे अक्षर, अंक, ".", "_" या "-", और अधिकतम एक "/" (जैसे sensor/north)।',
+    errPassword: 'पासवर्ड: 8–72 वर्ण (A–Z, a–z, 0–9, चिह्न या स्पेस), शुरुआत या अंत में स्पेस नहीं।',
+    errPasswordRequired: 'पासवर्ड आवश्यक है।',
+    errRole: 'भूमिका none, sensor या admin होनी चाहिए।',
+    errSensorLot: 'सेंसर उपयोगकर्ताओं के लिए लॉट आवश्यक है।',
+    errLotId: 'अमान्य लॉट आईडी।',
+    errUserId: 'अमान्य उपयोगकर्ता आईडी।',
+    errOccupancy: 'ऑक्यूपेंसी 0 या उससे अधिक पूर्ण संख्या होनी चाहिए।',
     lotNowState: '{name} अब {state} है।',
     stateOpen: 'खुला',
     stateClosed: 'बंद',
@@ -362,6 +403,14 @@ const translations = {
     errLoginFailed: 'লগইন ব্যর্থ হয়েছে',
     errCreateFailed: 'তৈরি করা ব্যর্থ হয়েছে',
     errDeleteFailed: 'মুছে ফেলা ব্যর্থ হয়েছে',
+    errUsername: 'ইউজারনেম: 1–32টি ছোট হাতের অক্ষর, অঙ্ক, ".", "_" বা "-", সর্বোচ্চ একটি "/" সহ (যেমন sensor/north)।',
+    errPassword: 'পাসওয়ার্ড: 8–72টি অক্ষর (A–Z, a–z, 0–9, চিহ্ন বা স্পেস), শুরুতে বা শেষে স্পেস ছাড়া।',
+    errPasswordRequired: 'পাসওয়ার্ড প্রয়োজন।',
+    errRole: 'ভূমিকা none, sensor বা admin হতে হবে।',
+    errSensorLot: 'সেন্সর ব্যবহারকারীদের একটি লট প্রয়োজন।',
+    errLotId: 'অবৈধ লট আইডি।',
+    errUserId: 'অবৈধ ব্যবহারকারী আইডি।',
+    errOccupancy: 'দখল 0 বা তার বেশি একটি পূর্ণসংখ্যা হতে হবে।',
     lotNowState: '{name} এখন {state}।',
     stateOpen: 'খোলা',
     stateClosed: 'বন্ধ',
@@ -430,6 +479,14 @@ const translations = {
     errLoginFailed: 'Falha no login',
     errCreateFailed: 'Falha ao criar',
     errDeleteFailed: 'Falha ao excluir',
+    errUsername: 'Usuário: 1–32 letras minúsculas, dígitos, ".", "_" ou "-", com no máximo uma "/" (como sensor/north).',
+    errPassword: 'Senha: 8–72 caracteres (A–Z, a–z, 0–9, símbolos ou espaços), sem espaço no início ou no fim.',
+    errPasswordRequired: 'A senha é obrigatória.',
+    errRole: 'A função deve ser none, sensor ou admin.',
+    errSensorLot: 'Usuários sensor precisam de um lote.',
+    errLotId: 'Id de lote inválido.',
+    errUserId: 'Id de usuário inválido.',
+    errOccupancy: 'A ocupação deve ser um número inteiro, 0 ou mais.',
     lotNowState: '{name} agora está {state}.',
     stateOpen: 'aberto',
     stateClosed: 'fechado',
@@ -498,6 +555,14 @@ const translations = {
     errLoginFailed: 'Ошибка входа',
     errCreateFailed: 'Ошибка создания',
     errDeleteFailed: 'Ошибка удаления',
+    errUsername: 'Имя пользователя: 1–32 строчные буквы, цифры, ".", "_" или "-", не больше одного "/" (например, sensor/north).',
+    errPassword: 'Пароль: 8–72 символа (A–Z, a–z, 0–9, знаки или пробелы), без пробела в начале и в конце.',
+    errPasswordRequired: 'Введите пароль.',
+    errRole: 'Роль должна быть none, sensor или admin.',
+    errSensorLot: 'Сенсору нужна парковка.',
+    errLotId: 'Неверный id парковки.',
+    errUserId: 'Неверный id пользователя.',
+    errOccupancy: 'Занятость должна быть целым числом от 0.',
     lotNowState: '{name} теперь {state}.',
     stateOpen: 'открыта',
     stateClosed: 'закрыта',
@@ -565,6 +630,14 @@ const translations = {
     errLoginFailed: 'ログインに失敗しました',
     errCreateFailed: '作成に失敗しました',
     errDeleteFailed: '削除に失敗しました',
+    errUsername: 'ユーザー名: 小文字、数字、"."、"_"、"-" の 1–32 文字。"/" は 1 つまで (例: sensor/north)。',
+    errPassword: 'パスワード: 8–72 文字 (A–Z、a–z、0–9、記号、スペース)。先頭と末尾にスペースは使えません。',
+    errPasswordRequired: 'パスワードを入力してください。',
+    errRole: '役割は none、sensor、admin のいずれかです。',
+    errSensorLot: 'センサーユーザーには駐車場が必要です。',
+    errLotId: '駐車場 ID が無効です。',
+    errUserId: 'ユーザー ID が無効です。',
+    errOccupancy: '占有数は 0 以上の整数で入力してください。',
     lotNowState: '{name} は現在 {state} です。',
     stateOpen: '営業中',
     stateClosed: '閉鎖中',
@@ -858,10 +931,15 @@ const handleAdminAction = async (action) => {
 
 const handleSensorUpdate = async (event) => {
   event.preventDefault();
-  sensorStatus.textContent = t('sending');
 
   const lotId = sensorSelect.value;
+  // An empty field is '' here, which Number() would quietly send as 0.
+  if (!isValidOccupancy(sensorOccupancy.value)) {
+    statusMessage(sensorStatus, t('errOccupancy'), true);
+    return;
+  }
   const occupancy = Number(sensorOccupancy.value);
+  sensorStatus.textContent = t('sending');
 
   try {
     const response = await authFetch(`/api/lots/${lotId}/occupancy`, {
@@ -890,15 +968,20 @@ const handleSensorUpdate = async (event) => {
 
 const handleLogin = async (event) => {
   event.preventDefault();
+  const credentials = {
+    username: loginUsername.value.trim(),
+    password: loginPassword.value,
+  };
+  if (!isValidLogin(credentials)) {
+    statusMessage(loginStatus, t(loginError(credentials)), true);
+    return;
+  }
   loginStatus.textContent = t('signingIn');
   try {
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: loginUsername.value.trim(),
-        password: loginPassword.value,
-      }),
+      body: JSON.stringify(credentials),
     });
     const data = await response.json();
     if (!response.ok) {
@@ -953,15 +1036,18 @@ const handleUserRoleChange = () => {
 
 const handleUserCreate = async (event) => {
   event.preventDefault();
+  const payload = {
+    username: userUsername.value.trim(),
+    password: userPassword.value,
+    role: userRole.value,
+    lot_id: userRole.value === 'sensor' ? Number(userLotSelect.value) : null,
+  };
+  if (!isValidNewUser(payload)) {
+    statusMessage(userStatus, t(newUserError(payload)), true);
+    return;
+  }
   userStatus.textContent = t('creating');
   try {
-    const payload = {
-      username: userUsername.value.trim(),
-      password: userPassword.value,
-      role: userRole.value,
-      lot_id: userRole.value === 'sensor' ? Number(userLotSelect.value) : null,
-    };
-
     const response = await authFetch('/api/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

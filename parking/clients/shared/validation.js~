@@ -1,0 +1,79 @@
+// What counts as valid input, written once and used in three places: every client checks a
+// form before sending it, the server checks every request before touching the database, and
+// validation.test.js checks the patterns themselves.
+//
+// The file imports nothing, so the server can load it, the vanilla page can fetch it as it
+// is, and the bundlers can include it, all from this one copy.
+
+// Every pattern is anchored with ^...$, so it must match the whole input, not just part of
+// it. None has the g flag: a g regex remembers where its last match ended (lastIndex), so
+// calling test() twice on the same valid input answers true, then false.
+export const patterns = Object.freeze({
+  // 1 to 32 characters (the lookahead), lowercase letters, digits, '.', '_' and '-', with at
+  // most one '/', and each side of it starting with a letter or digit: root, sensor/north.
+  username: /^(?=.{1,32}$)[a-z0-9][a-z0-9._-]*(?:\/[a-z0-9][a-z0-9._-]*)?$/,
+  // 8 to 72 visible ASCII characters (! through ~), so no spaces. bcrypt reads only the
+  // first 72 bytes, and in ASCII a character is a byte.
+  password: /^[\x21-\x7e]{8,72}$/,
+  // At least one character that is not white space.
+  filled: /\S/,
+  // The group matters: without it, ^none|admin|sensor$ means "starts with none, or contains
+  // admin, or ends with sensor", and "administrator" would pass.
+  role: /^(?:none|admin|sensor)$/,
+  // A database id: no sign, no leading zero, no decimal point, no exponent, and at most nine
+  // digits, which stays under Postgres's INTEGER limit of 2147483647.
+  id: /^[1-9][0-9]{0,8}$/,
+  // A count of cars: zero, or an id-shaped number.
+  count: /^(?:0|[1-9][0-9]{0,8})$/,
+});
+
+// The patterns describe text. A string is checked as it is, and a JSON number as JavaScript
+// prints it, so 7 is checked as "7" and 7.5 as "7.5". Anything else is not text and never
+// matches: String(['7']) is "7", but an array is not an occupancy.
+export function asText(value) {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return null;
+}
+
+export function matches(pattern, value) {
+  const text = asText(value);
+  return text !== null && pattern.test(text);
+}
+
+// One predicate per kind of value: true when the value matches its pattern.
+const isValid = (pattern) => (value) => matches(pattern, value);
+
+export const isValidUsername = isValid(patterns.username);
+export const isValidPassword = isValid(patterns.password);
+export const isValidLoginPassword = isValid(patterns.filled);
+export const isValidRole = isValid(patterns.role);
+export const isValidId = isValid(patterns.id);
+export const isValidOccupancy = isValid(patterns.count);
+
+// A form's error is the translation key of the message for its first invalid field, or null
+// when every field is valid. Clients show the message in the user's language; the server
+// sends it in English.
+
+// Signing in checks only that the username could exist. The password rules are for new
+// passwords, and an older one may not follow them.
+export function loginError(input) {
+  const { username, password } = input ?? {};
+  if (!isValidUsername(username)) return 'errUsername';
+  if (!isValidLoginPassword(password)) return 'errPasswordRequired';
+  return null;
+}
+
+// A missing role means "none", as it does on the server.
+export function newUserError(input) {
+  const { username, password, lot_id: lotId } = input ?? {};
+  const role = input?.role ?? 'none';
+  if (!isValidUsername(username)) return 'errUsername';
+  if (!isValidPassword(password)) return 'errPassword';
+  if (!isValidRole(role)) return 'errRole';
+  if (role === 'sensor' && !isValidId(lotId)) return 'errSensorLot';
+  return null;
+}
+
+export const isValidLogin = (input) => loginError(input) === null;
+export const isValidNewUser = (input) => newUserError(input) === null;

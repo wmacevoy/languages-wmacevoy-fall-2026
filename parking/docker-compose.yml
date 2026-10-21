@@ -14,7 +14,10 @@ services:
       - "5432:5432"
 
   app:
-    build: ./server
+    # From parking/, so the server can include the checks in clients/shared.
+    build:
+      context: .
+      dockerfile: server/Dockerfile
     environment:
       DATABASE_URL: postgres://parking_user:parking_pass@db:5432/parking
       JWT_SECRET: demo-secret-change-me
@@ -23,6 +26,29 @@ services:
       - db
     ports:
       - "3000:3000"
+
+  # The same app rebuilt in React and in Vue, side by side with the vanilla one on :3000.
+  react:
+    build:
+      context: .
+      dockerfile: clients/web.Dockerfile
+      args:
+        CLIENT: react
+    depends_on:
+      - app
+    ports:
+      - "3001:80"
+
+  vue:
+    build:
+      context: .
+      dockerfile: clients/web.Dockerfile
+      args:
+        CLIENT: vue
+    depends_on:
+      - app
+    ports:
+      - "3002:80"
 
 volumes:
   pgdata:

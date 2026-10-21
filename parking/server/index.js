@@ -2,6 +2,18 @@ const express = require('express');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const { pool } = require('./db');
+// The same checks the clients run on their forms. The files are ES modules; require() can
+// load them because neither uses top-level await.
+const shared = path.join(__dirname, '..', 'clients', 'shared');
+const { translate } = require(path.join(shared, 'i18n.js'));
+const {
+  isValidId,
+  isValidLogin,
+  isValidNewUser,
+  isValidOccupancy,
+  loginError,
+  newUserError,
+} = require(path.join(shared, 'validation.js'));
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -24,6 +36,13 @@ const lotSelectFields = `
 
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+// The vanilla page imports the checks from here; the other clients bundle their own copy.
+app.get('/validation.js', (req, res) => {
+  res.sendFile(path.join(shared, 'validation.js'));
+});
+
+// Refuses a request with the message for a translation key, in English.
+const refuse = (res, error) => res.status(400).json({ error: translate('en', error) });
 
 const getUserFromRequest = (req) => {
   const authHeader = req.headers.authorization || '';
@@ -64,12 +83,8 @@ const requireSensorForLot = (req, res, next) => {
     return res.status(403).json({ error: 'Sensor access required' });
   }
 
-  const lotId = Number(req.params.id);
-  if (!Number.isInteger(lotId)) {
-    return res.status(400).json({ error: 'Invalid lot id' });
-  }
-
-  if (Number(user.lot_id) !== lotId) {
+  // parseLotId has already checked the id.
+  if (Number(user.lot_id) !== req.lotId) {
     return res.status(403).json({ error: 'Sensor not assigned to this lot' });
   }
 
@@ -77,12 +92,10 @@ const requireSensorForLot = (req, res, next) => {
   next();
 };
 
+// Number() alone would take '', '1.0', '1e3' and '0x10' as ids; the pattern takes digits.
 const parseLotId = (req, res, next) => {
-  const lotId = Number(req.params.id);
-  if (!Number.isInteger(lotId)) {
-    return res.status(400).json({ error: 'Invalid lot id' });
-  }
-  req.lotId = lotId;
+  if (!isValidId(req.params.id)) return refuse(res, 'errLotId');
+  req.lotId = Number(req.params.id);
   next();
 };
 
@@ -91,10 +104,8 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body || {};
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
-  }
+  if (!isValidLogin(req.body)) return refuse(res, loginError(req.body));
+  const { username, password } = req.body;
 
   try {
     const { rows } = await pool.query(
@@ -205,11 +216,8 @@ app.post(
   parseLotId,
   requireSensorForLot,
   async (req, res) => {
+    if (!isValidOccupancy(req.body?.occupancy)) return refuse(res, 'errOccupancy');
     const occupancy = Number(req.body.occupancy);
-
-    if (!Number.isInteger(occupancy) || occupancy < 0) {
-      return res.status(400).json({ error: 'Invalid occupancy' });
-    }
 
     try {
       const { rows: lotRows } = await pool.query(
@@ -261,22 +269,11 @@ app.get('/api/users', requireAdmin, async (req, res) => {
 });
 
 app.post('/api/users', requireAdmin, async (req, res) => {
-  const { username, password, role, lot_id: lotId } = req.body || {};
-  const allowedRoles = new Set(['none', 'admin', 'sensor']);
-  const safeRole = role || 'none';
+  if (!isValidNewUser(req.body)) return refuse(res, newUserError(req.body));
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password required' });
-  }
-
-  if (!allowedRoles.has(safeRole)) {
-    return res.status(400).json({ error: 'Invalid role' });
-  }
-
+  const { username, password, role, lot_id: lotId } = req.body;
+  const safeRole = role ?? 'none';
   const sensorLotId = safeRole === 'sensor' ? Number(lotId) : null;
-  if (safeRole === 'sensor' && !Number.isInteger(sensorLotId)) {
-    return res.status(400).json({ error: 'Sensor users require a lot' });
-  }
 
   try {
     const { rows } = await pool.query(
@@ -296,10 +293,8 @@ app.post('/api/users', requireAdmin, async (req, res) => {
 });
 
 app.delete('/api/users/:id', requireAdmin, async (req, res) => {
+  if (!isValidId(req.params.id)) return refuse(res, 'errUserId');
   const userId = Number(req.params.id);
-  if (!Number.isInteger(userId)) {
-    return res.status(400).json({ error: 'Invalid user id' });
-  }
 
   try {
     const { rows } = await pool.query(

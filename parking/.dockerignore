@@ -1,0 +1,7 @@
+# Every image builds from this folder: the web clients, and the server, which needs
+# clients/shared.
+**/node_modules
+**/dist
+**/.expo
+clients/react-native
+acceptance

@@ -11,6 +11,11 @@ docker compose up --build
 
 Then open `http://localhost:3000`.
 
+The same app rebuilt in React and in Vue runs alongside it at `http://localhost:3001` and
+`http://localhost:3002`, and a React Native version runs on phones. See
+[`clients/README.md`](clients/README.md) for how they compare, and `acceptance/` for the one test
+suite all the web versions pass.
+
 ## Default users
 
 - Root user (all roles): `root` / `rootpass`
@@ -32,6 +37,11 @@ Admins can create/delete users. Sensors should be assigned to a lot (often named
 - `GET /api/users` — admin list users
 - `POST /api/users` — admin create user
 - `DELETE /api/users/:id` — admin delete user
+
+Every request is checked against the regular expressions in
+[`clients/shared/validation.js`](clients/shared/validation.js), the same checks the clients run
+on their forms. A request that fails one gets `400` and `{ "error": "<why>" }`. Ids must be
+digits (`1.0`, `01` and `1e3` are refused), and occupancy must be a whole number given as digits.
 
 ## Notes
 
